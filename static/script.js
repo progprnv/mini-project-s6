@@ -135,7 +135,7 @@ function displayResults(data) {
         <h4>📊 Scan Summary</h4>
         <p><strong>Scan ID:</strong> ${data.scan_id}</p>
         <p><strong>Status:</strong> ${data.status}</p>
-        <p><strong>Total Detections:</strong> ${detections.length}</p>
+        <p><strong>Total Detections:</strong> ${data.results_count}</p>
         <p><strong>Started:</strong> ${new Date(data.start_time).toLocaleString()}</p>
         <p><strong>Completed:</strong> ${new Date(data.end_time).toLocaleString()}</p>
     `;
@@ -145,45 +145,45 @@ function displayResults(data) {
     tbody.innerHTML = '';
     
     if (detections.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px;">✅ No sensitive data leaks detected!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">✅ No sensitive data leaks detected!</td></tr>';
     } else {
-        // Track URLs to avoid duplicates
-        const processedUrls = new Set();
-        
-        detections.forEach(detection => {
-            // Skip if URL already displayed
-            if (processedUrls.has(detection.file_url)) {
+        detections.forEach(urlItem => {
+            // Get all detections for this URL
+            const urlDetections = urlItem.detections || [];
+            
+            if (urlDetections.length === 0) {
                 return;
             }
-            processedUrls.add(detection.file_url);
-            
-            // Get all detections for this URL
-            const urlDetections = detections.filter(d => d.file_url === detection.file_url);
             
             // Consolidate data types
-            const dataTypes = urlDetections
-                .map(d => d.data_type)
-                .filter((type, index, self) => self.indexOf(type) === index); // Remove duplicates
+            const dataTypes = urlItem.data_types || [];
             
             // Get highest confidence
-            const maxConfidence = Math.max(...urlDetections.map(d => d.confidence));
+            const confidences = urlDetections.map(d => d.confidence).filter(c => c !== undefined && c !== null);
+            const maxConfidence = confidences.length > 0 ? Math.max(...confidences) : 0;
             const confidenceClass = maxConfidence >= 80 ? 'confidence-high' : 'confidence-medium';
             
             // Get first evidence for context
             const firstDetection = urlDetections[0];
             let evidence = '';
             try {
-                evidence = JSON.parse(firstDetection.evidence).context || firstDetection.evidence;
+                if (typeof firstDetection.evidence === 'string') {
+                    evidence = JSON.parse(firstDetection.evidence).context || firstDetection.evidence;
+                } else {
+                    evidence = firstDetection.evidence || '';
+                }
             } catch {
                 evidence = firstDetection.evidence || '';
             }
             
             const row = document.createElement('tr');
+            const leakIds = urlDetections.map(d => d.leak_id).join(',');
             row.innerHTML = `
                 <td><strong>${dataTypes.join(', ').replace(/_/g, ' ').toUpperCase()}</strong></td>
-                <td><a href="${detection.file_url}" target="_blank" style="color: #000; text-decoration: underline;">${detection.file_url.substring(0, 60)}...</a></td>
-                <td class="${confidenceClass}">${maxConfidence.toFixed(1)}%</td>
+                <td><a href="${urlItem.file_url}" target="_blank" style="color: #000; text-decoration: underline;">${urlItem.file_url.substring(0, 60)}...</a></td>
+                <td class="${confidenceClass}">${maxConfidence !== undefined && !isNaN(maxConfidence) ? maxConfidence.toFixed(1) : '0'}%</td>
                 <td>${evidence.substring(0, 80)}...</td>
+                <td><button class="btn-delete" onclick="deleteDetection('${leakIds}')" title="Delete this detection">🗑️ Delete</button></td>
             `;
             tbody.appendChild(row);
         });
@@ -198,14 +198,18 @@ function exportResults() {
     const table = document.getElementById('resultsTable');
     let csv = [];
     
-    // Headers
-    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    // Headers (exclude Action column)
+    const headers = Array.from(table.querySelectorAll('thead th'))
+        .slice(0, 4)
+        .map(th => th.textContent);
     csv.push(headers.join(','));
     
-    // Rows
+    // Rows (exclude Action column)
     const rows = table.querySelectorAll('tbody tr');
     rows.forEach(row => {
-        const cells = Array.from(row.querySelectorAll('td')).map(td => `"${td.textContent}"`);
+        const cells = Array.from(row.querySelectorAll('td'))
+            .slice(0, 4)
+            .map(td => `"${td.textContent}"`);
         csv.push(cells.join(','));
     });
     
@@ -281,3 +285,35 @@ async function viewScanDetails(scanId) {
 document.addEventListener('DOMContentLoaded', () => {
     loadRecentScans();
 });
+
+// Delete detection
+async function deleteDetection(leakIds) {
+    if (!confirm('Are you sure you want to delete this detection record?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/detections/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ leak_ids: leakIds.split(',').map(Number) })
+        });
+        
+        if (response.ok) {
+            alert('Detection record deleted successfully!');
+            // Reload the table
+            const currentScanId = document.getElementById('scanId').textContent;
+            if (currentScanId && currentScanId !== '-') {
+                viewScanDetails(parseInt(currentScanId));
+            }
+        } else {
+            const error = await response.json();
+            alert('Error deleting detection: ' + (error.detail || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting detection: ' + error.message);
+    }
+}

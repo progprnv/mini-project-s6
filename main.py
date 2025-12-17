@@ -226,6 +226,34 @@ async def test_email():
         raise HTTPException(status_code=500, detail="Failed to send test email")
 
 
+@app.post("/api/detections/delete")
+async def delete_detections(request: dict, db: Session = Depends(get_db)):
+    """Delete detection records by leak IDs"""
+    try:
+        leak_ids = request.get('leak_ids', [])
+        
+        if not leak_ids:
+            raise HTTPException(status_code=400, detail="No leak IDs provided")
+        
+        # Delete the records
+        deleted_count = db.query(DetectedLeak).filter(
+            DetectedLeak.leak_id.in_(leak_ids)
+        ).delete()
+        
+        db.commit()
+        
+        logger.info(f"🗑️ Deleted {deleted_count} detection records")
+        
+        return {
+            "status": "success",
+            "message": f"Successfully deleted {deleted_count} detection record(s)",
+            "deleted_count": deleted_count
+        }
+    except Exception as e:
+        logger.error(f"❌ Error deleting detections: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def execute_sensitive_data_scan(
     scan_id: int,
     data_types: List[str],
@@ -269,8 +297,10 @@ def execute_sensitive_data_scan(
                 if query_data_type not in data_types:
                     continue
                 
-                # Search Google - fetch 10 results to get diverse URLs
-                results = google_search.search(query, num_results=10)
+                # Search Google with pagination - fetch up to 100 results (10 pages) per query
+                # Calculate max_pages based on remaining max_results
+                pages_needed = min(10, max(1, max_results // len(queries)))
+                results = google_search.search(query, num_results=10, max_pages=pages_needed)
                 logger.info(f"🔎 Query: {query} -> {len(results)} results")
                 
                 # Process each result
