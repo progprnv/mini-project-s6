@@ -20,7 +20,7 @@ from google_search import GoogleSearchAPI
 from document_processor import DocumentProcessor
 from sensitive_data_detector import SensitiveDataDetector
 from email_reporter import EmailReporter
-from phishing_site_detector import PhishingSiteDetector
+from government_impersonation_detector import GovernmentImersonationDetector
 from config import settings
 
 
@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Cybersecurity Detection Framework - Module 1",
-    description="Automated Sensitive Data & Spoofing Detection System",
-    version="1.0.0"
+    title="Cybersecurity Detection Framework - Module 1 & 2",
+    description="Automated Sensitive Data Detection & Government Impersonation Detection System",
+    version="2.0.0"
 )
 
 # CORS middleware
@@ -52,7 +52,7 @@ google_search = GoogleSearchAPI()
 doc_processor = DocumentProcessor()
 data_detector = SensitiveDataDetector()
 email_reporter = EmailReporter()
-phishing_detector = PhishingSiteDetector()
+gids_detector = GovernmentImersonationDetector()
 
 
 # Pydantic models for API requests
@@ -64,9 +64,8 @@ class ScanRequest(BaseModel):
     send_email: Optional[bool] = True
 
 
-class PhishingScanRequest(BaseModel):
-    site_domain: Optional[str] = 'gov.in'
-    app_types: Optional[List[str]] = ['betting_apps', 'trading_apps', 'rummy_apps']
+class GovernmentImersonationScanRequest(BaseModel):
+    impersonation_types: Optional[List[str]] = ['aadhaar_login', 'pan_verification', 'voter_registration']
 
 
 class ScanResponse(BaseModel):
@@ -454,22 +453,23 @@ def execute_sensitive_data_scan(
         db.close()
 
 
-# ============ MODULE 2: PHISHING SITE DETECTION ============
+# ============ MODULE 2: GOVERNMENT IMPERSONATION DETECTION SYSTEM (GIDS) ============
 
-@app.post("/api/scan/phishing-site", response_model=ScanResponse)
-async def start_phishing_site_scan(
-    request: PhishingScanRequest,
+@app.post("/api/scan/government-impersonation", response_model=ScanResponse)
+async def start_government_impersonation_scan(
+    request: GovernmentImersonationScanRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
-    Module 2: Start phishing site detection scan
-    Uses Google dorks to find potential phishing/spoofed websites
+    Module 2: Start Government Impersonation Detection System (GIDS) scan
+    Uses Google dorks to find websites impersonating Indian government services
+    Primary dork: intitle:"aadhaar login" -site:gov.in
     """
     try:
         # Create scan record
         scan = Scan(
-            scan_type="phishing_site",
+            scan_type="government_impersonation",
             status="in_progress",
             start_time=datetime.utcnow()
         )
@@ -479,11 +479,10 @@ async def start_phishing_site_scan(
         
         # Log action
         audit = AuditLog(
-            action="phishing_scan_started",
+            action="gids_scan_started",
             details=json.dumps({
                 "scan_id": scan.scan_id,
-                "site_domain": request.site_domain,
-                "app_types": request.app_types
+                "impersonation_types": request.impersonation_types
             }),
             status="success"
         )
@@ -492,28 +491,27 @@ async def start_phishing_site_scan(
         
         # Start background task
         background_tasks.add_task(
-            execute_phishing_site_scan,
+            execute_government_impersonation_scan,
             scan.scan_id,
-            request.site_domain,
-            request.app_types
+            request.impersonation_types
         )
         
-        logger.info(f"✅ Phishing site scan {scan.scan_id} started for {request.site_domain}")
+        logger.info(f"✅ GIDS scan {scan.scan_id} started")
         
         return ScanResponse(
             scan_id=scan.scan_id,
             status="in_progress",
-            message=f"Phishing site scan started for {request.site_domain}"
+            message=f"Government Impersonation Detection System scan initiated. Scan ID: {scan.scan_id}"
         )
     
     except Exception as e:
-        logger.error(f"Error starting phishing site scan: {str(e)}")
+        logger.error(f"Error starting GIDS scan: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/scan/{scan_id}/phishing-site")
-async def get_phishing_site_scan_status(scan_id: int, db: Session = Depends(get_db)):
-    """Get phishing site scan status and results"""
+@app.get("/api/scan/{scan_id}/government-impersonation")
+async def get_government_impersonation_scan_status(scan_id: int, db: Session = Depends(get_db)):
+    """Get Government Impersonation Detection System scan status and results"""
     try:
         scan = db.query(Scan).filter(Scan.scan_id == scan_id).first()
         
@@ -532,13 +530,15 @@ async def get_phishing_site_scan_status(scan_id: int, db: Session = Depends(get_
                 findings.append({
                     "leak_id": result.leak_id,
                     "url": result.file_url,
-                    "app_type": result.data_type,
+                    "domain": evidence.get("domain", ""),
+                    "impersonation_type": result.data_type,
                     "confidence": result.confidence,
                     "risk_level": evidence.get("risk_level", "MEDIUM"),
                     "title": evidence.get("title", ""),
                     "snippet": evidence.get("snippet", ""),
                     "indicators": evidence.get("indicators", []),
-                    "is_gov_subdomain": evidence.get("is_gov_subdomain", False)
+                    "is_legitimate_gov": evidence.get("is_legitimate_gov", False),
+                    "threat_details": evidence.get("threat_details", "")
                 })
             except Exception as e:
                 logger.warning(f"Error parsing result: {e}")
@@ -555,8 +555,7 @@ async def get_phishing_site_scan_status(scan_id: int, db: Session = Depends(get_
         return {
             "scan_id": scan_id,
             "status": scan.status,
-            "module": "phishing_site_detection",
-            "site_domain": results[0].data_type if results else "gov.in",
+            "module": "government_impersonation_detection",
             "start_time": scan.start_time.isoformat() if scan.start_time else None,
             "end_time": scan.end_time.isoformat() if scan.end_time else None,
             "results_count": len(findings),
@@ -567,16 +566,15 @@ async def get_phishing_site_scan_status(scan_id: int, db: Session = Depends(get_
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting phishing site scan status: {str(e)}")
+        logger.error(f"Error getting GIDS scan status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def execute_phishing_site_scan(
+async def execute_government_impersonation_scan(
     scan_id: int,
-    site_domain: str = "gov.in",
-    app_types: List[str] = None
+    impersonation_types: List[str] = None
 ):
-    """Background task: Execute phishing site detection scan"""
+    """Background task: Execute Government Impersonation Detection System (GIDS) scan"""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     
@@ -590,13 +588,13 @@ async def execute_phishing_site_scan(
         scan.status = "in_progress"
         db.commit()
         
-        logger.info(f"Starting phishing site scan for domain: {site_domain}")
+        logger.info(f"Starting Government Impersonation Detection System scan")
         
-        if not app_types:
-            app_types = ['betting_apps', 'trading_apps', 'rummy_apps']
+        if not impersonation_types:
+            impersonation_types = ['aadhaar_login', 'pan_verification', 'voter_registration', 'passport_services', 'license_services']
         
-        # Run phishing detection
-        scan_results = await phishing_detector.scan_domain(site_domain, app_types)
+        # Run GIDS detection
+        scan_results = await gids_detector.scan_for_impersonation(impersonation_types)
         
         # Store findings in database
         findings = scan_results.get("findings", [])
@@ -605,15 +603,17 @@ async def execute_phishing_site_scan(
             try:
                 leak = DetectedLeak(
                     scan_id=scan_id,
-                    data_type=finding.get("app_type", "unknown"),
+                    data_type=finding.get("impersonation_type", "unknown"),
                     file_url=finding.get("url", ""),
                     confidence=finding.get("confidence", 0),
                     evidence=json.dumps({
+                        "domain": finding.get("domain", ""),
                         "title": finding.get("title", ""),
                         "snippet": finding.get("snippet", ""),
                         "risk_level": finding.get("risk_level", "MEDIUM"),
                         "indicators": finding.get("indicators", []),
-                        "is_gov_subdomain": finding.get("is_gov_subdomain", False)
+                        "is_legitimate_gov": finding.get("is_legitimate_gov", False),
+                        "threat_details": finding.get("threat_details", "")
                     })
                 )
                 db.add(leak)
@@ -628,10 +628,10 @@ async def execute_phishing_site_scan(
         scan.results_count = len(findings)
         db.commit()
         
-        logger.info(f"✅ Phishing site scan {scan_id} completed. Found {len(findings)} results.")
+        logger.info(f"✅ GIDS scan {scan_id} completed. Found {len(findings)} government impersonation websites.")
     
     except Exception as e:
-        logger.error(f"❌ Phishing site scan {scan_id} failed: {str(e)}")
+        logger.error(f"❌ GIDS scan {scan_id} failed: {str(e)}")
         scan = db.query(Scan).filter(Scan.scan_id == scan_id).first()
         if scan:
             scan.status = "failed"

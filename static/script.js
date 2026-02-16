@@ -325,43 +325,34 @@ async function deleteDetection(leakIds) {
         alert('Error deleting detection: ' + error.message);
     }
 }
-// ============ MODULE 2: PHISHING SITE DETECTION ============
+// ============ MODULE 2: GOVERNMENT IMPERSONATION DETECTION SYSTEM (GIDS) ============
 
-// Start phishing site scan
-async function startPhishingSiteScan() {
+// Start GIDS scan
+async function startGIDSScan() {
     try {
-        // Get selected app types
-        const appTypeCheckboxes = document.querySelectorAll('input[name="appType"]:checked');
-        const appTypes = Array.from(appTypeCheckboxes).map(cb => cb.value);
+        // Get selected impersonation types
+        const impersonationTypeCheckboxes = document.querySelectorAll('input[name="impersonationType"]:checked');
+        const impersonationTypes = Array.from(impersonationTypeCheckboxes).map(cb => cb.value);
         
-        if (appTypes.length === 0) {
-            alert('Please select at least one phishing type to scan');
-            return;
-        }
-        
-        // Get site domain
-        const siteDomain = document.getElementById('siteDomain').value || 'gov.in';
-        
-        if (!siteDomain.trim()) {
-            alert('Please enter a domain to scan');
+        if (impersonationTypes.length === 0) {
+            alert('Please select at least one government service to scan');
             return;
         }
         
         // Prepare request
         const requestData = {
-            site_domain: siteDomain.trim(),
-            app_types: appTypes
+            impersonation_types: impersonationTypes
         };
         
         // Show progress panel
-        document.getElementById('phishing-progressPanel').style.display = 'block';
-        document.getElementById('phishing-resultsPanel').style.display = 'none';
-        document.getElementById('phishing-progressText').textContent = 'Initializing scan...';
-        document.getElementById('phishing-progressFill').style.width = '0%';
-        document.getElementById('phishing-progressPercent').textContent = '0%';
+        document.getElementById('gids-progressPanel').style.display = 'block';
+        document.getElementById('gids-resultsPanel').style.display = 'none';
+        document.getElementById('gids-progressText').textContent = 'Initializing scan...';
+        document.getElementById('gids-progressFill').style.width = '0%';
+        document.getElementById('gids-progressPercent').textContent = '0%';
         
         // Send request
-        const response = await fetch('/api/scan/phishing-site', {
+        const response = await fetch('/api/scan/government-impersonation', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -373,59 +364,59 @@ async function startPhishingSiteScan() {
         
         if (response.ok) {
             const scanId = result.scan_id;
-            document.getElementById('phishing-scanId').textContent = scanId;
-            document.getElementById('phishing-progressText').textContent = 'Scanning for phishing indicators using Google dorks...';
+            document.getElementById('gids-scanId').textContent = scanId;
+            document.getElementById('gids-progressText').textContent = 'Scanning for government impersonation sites using Google dorks...';
             
             // Poll for results
-            pollPhishingSiteScanStatus(scanId);
+            pollGIDSScanStatus(scanId);
         } else {
             alert('Error starting scan: ' + result.detail);
-            document.getElementById('phishing-progressPanel').style.display = 'none';
+            document.getElementById('gids-progressPanel').style.display = 'none';
         }
         
     } catch (error) {
         console.error('Error:', error);
         alert('Error starting scan: ' + error.message);
-        document.getElementById('phishing-progressPanel').style.display = 'none';
+        document.getElementById('gids-progressPanel').style.display = 'none';
     }
 }
 
-// Poll phishing site scan status
-let phishingPollInterval;
-function pollPhishingSiteScanStatus(scanId) {
+// Poll GIDS scan status
+let gidsPollInterval;
+function pollGIDSScanStatus(scanId) {
     let progress = 0;
     
-    phishingPollInterval = setInterval(async () => {
+    gidsPollInterval = setInterval(async () => {
         try {
-            const response = await fetch(`/api/scan/${scanId}/phishing-site`);
+            const response = await fetch(`/api/scan/${scanId}/government-impersonation`);
             const data = await response.json();
             
             // Update progress
             if (data.status === 'in_progress') {
                 progress = Math.min(progress + 15, 85);
-                document.getElementById('phishing-progressFill').style.width = progress + '%';
-                document.getElementById('phishing-progressPercent').textContent = Math.round(progress) + '%';
-                document.getElementById('phishing-scanStatus').textContent = 'Scanning...';
+                document.getElementById('gids-progressFill').style.width = progress + '%';
+                document.getElementById('gids-progressPercent').textContent = Math.round(progress) + '%';
+                document.getElementById('gids-scanStatus').textContent = 'Scanning...';
             } else if (data.status === 'completed') {
-                clearInterval(phishingPollInterval);
-                document.getElementById('phishing-progressFill').style.width = '100%';
-                document.getElementById('phishing-progressPercent').textContent = '100%';
-                document.getElementById('phishing-progressText').textContent = 'Scan completed!';
-                document.getElementById('phishing-scanStatus').textContent = 'Completed';
-                document.getElementById('phishing-findingsCount').textContent = data.results_count;
+                clearInterval(gidsPollInterval);
+                document.getElementById('gids-progressFill').style.width = '100%';
+                document.getElementById('gids-progressPercent').textContent = '100%';
+                document.getElementById('gids-progressText').textContent = 'Scan completed!';
+                document.getElementById('gids-scanStatus').textContent = 'Completed';
+                document.getElementById('gids-findingsCount').textContent = data.results_count;
                 
                 // Show results after brief delay
                 setTimeout(() => {
-                    displayPhishingSiteResults(data);
+                    displayGIDSResults(data);
                 }, 1000);
             } else if (data.status === 'failed') {
-                clearInterval(phishingPollInterval);
+                clearInterval(gidsPollInterval);
                 alert('Scan failed. Please try again.');
-                document.getElementById('phishing-progressPanel').style.display = 'none';
+                document.getElementById('gids-progressPanel').style.display = 'none';
             }
             
             // Update findings count
-            document.getElementById('phishing-findingsCount').textContent = data.results_count;
+            document.getElementById('gids-findingsCount').textContent = data.results_count;
             
         } catch (error) {
             console.error('Error polling status:', error);
@@ -433,23 +424,22 @@ function pollPhishingSiteScanStatus(scanId) {
     }, 3000); // Poll every 3 seconds
 }
 
-// Display phishing site results
-function displayPhishingSiteResults(data) {
-    document.getElementById('phishing-progressPanel').style.display = 'none';
-    document.getElementById('phishing-resultsPanel').style.display = 'block';
+// Display GIDS results
+function displayGIDSResults(data) {
+    document.getElementById('gids-progressPanel').style.display = 'none';
+    document.getElementById('gids-resultsPanel').style.display = 'block';
     
     const findings = data.findings || [];
     
     // Results summary
-    const summary = document.getElementById('phishing-resultsSummary');
+    const summary = document.getElementById('gids-resultsSummary');
     const riskBreakdown = data.risk_breakdown || { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
     
     summary.innerHTML = `
         <h4>📊 Scan Summary</h4>
         <p><strong>Scan ID:</strong> ${data.scan_id}</p>
         <p><strong>Status:</strong> ${data.status}</p>
-        <p><strong>Domain Scanned:</strong> ${data.site_domain}</p>
-        <p><strong>Total Findings:</strong> ${data.results_count}</p>
+        <p><strong>Total Threats Found:</strong> ${data.results_count}</p>
         <div class="risk-breakdown">
             <span class="risk-critical">🔴 Critical: ${riskBreakdown.CRITICAL}</span>
             <span class="risk-high">🟠 High: ${riskBreakdown.HIGH}</span>
@@ -459,19 +449,19 @@ function displayPhishingSiteResults(data) {
     `;
     
     // Store results globally for filtering
-    window.allPhishingResults = findings;
+    window.allGIDSResults = findings;
     
     // Display results
-    displayPhishingSiteResultsTable(findings);
+    displayGIDSResultsTable(findings);
 }
 
-// Display phishing site results table
-function displayPhishingSiteResultsTable(results) {
-    const tbody = document.getElementById('phishing-resultsTableBody');
+// Display GIDS results table
+function displayGIDSResultsTable(results) {
+    const tbody = document.getElementById('gids-resultsTableBody');
     tbody.innerHTML = '';
     
     if (results.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">✅ No phishing indicators detected!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">✅ No government impersonation threats detected!</td></tr>';
     } else {
         results.forEach((result, index) => {
             const riskColorMap = {
@@ -482,43 +472,44 @@ function displayPhishingSiteResultsTable(results) {
             };
             const riskColor = riskColorMap[result.risk_level] || '#666';
             
+            const threatDetail = result.threat_details || 'Government impersonation threat';
             const indicatorsText = (result.indicators || []).slice(0, 2).join(', ') || 'None';
             
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td><a href="${result.url}" target="_blank" style="color: #000; text-decoration: underline;">${result.url.substring(0, 60)}...</a></td>
-                <td>${result.app_type}</td>
+                <td><strong>${result.impersonation_type}</strong></td>
+                <td><a href="${result.url}" target="_blank" style="color: #000; text-decoration: underline;">${result.domain}</a></td>
                 <td style="color: ${riskColor}; font-weight: bold;">${result.risk_level}</td>
                 <td><strong>${result.confidence ? result.confidence.toFixed(1) : '0'}%</strong></td>
-                <td><small>${indicatorsText}</small></td>
+                <td><small>${threatDetail.substring(0, 100)}</small></td>
             `;
             tbody.appendChild(row);
         });
     }
 }
 
-// Filter phishing site results
-function filterPhishingResults(level) {
+// Filter GIDS results
+function filterGIDSResults(level) {
     const filterBtns = document.querySelectorAll('.filter-btn');
     filterBtns.forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     
-    let filtered = window.allPhishingResults || [];
+    let filtered = window.allGIDSResults || [];
     if (level !== 'all') {
-        filtered = window.allPhishingResults.filter(r => r.risk_level === level);
+        filtered = window.allGIDSResults.filter(r => r.risk_level === level);
     }
     
-    displayPhishingSiteResultsTable(filtered);
+    displayGIDSResultsTable(filtered);
 }
 
-// Export phishing results
-function exportPhishingResults() {
-    const results = window.allPhishingResults || [];
-    let csv = ['URL,App Type,Risk Level,Confidence %,Indicators'];
+// Export GIDS results
+function exportGIDSResults() {
+    const results = window.allGIDSResults || [];
+    let csv = ['Impersonation Type,Domain,URL,Risk Level,Confidence %,Indicators,Threat Details'];
     
     results.forEach(result => {
         const indicators = (result.indicators || []).join('; ');
-        csv.push(`"${result.url}","${result.app_type}","${result.risk_level}","${result.confidence}","${indicators}"`);
+        csv.push(`"${result.impersonation_type}","${result.domain}","${result.url}","${result.risk_level}","${result.confidence}","${indicators}","${result.threat_details}"`);
     });
     
     const csvContent = csv.join('\n');
@@ -526,16 +517,16 @@ function exportPhishingResults() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `phishing_site_results_${new Date().getTime()}.csv`;
+    a.download = `gids_results_${new Date().getTime()}.csv`;
     a.click();
 }
 
-// Reset phishing scan
-function resetPhishingScan() {
-    document.getElementById('phishing-progressPanel').style.display = 'none';
-    document.getElementById('phishing-resultsPanel').style.display = 'none';
-    document.getElementById('phishing-progressFill').style.width = '0%';
-    window.allPhishingResults = [];
+// Reset GIDS scan
+function resetGIDSScan() {
+    document.getElementById('gids-progressPanel').style.display = 'none';
+    document.getElementById('gids-resultsPanel').style.display = 'none';
+    document.getElementById('gids-progressFill').style.width = '0%';
+    window.allGIDSResults = [];
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });

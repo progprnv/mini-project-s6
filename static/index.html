@@ -29,9 +29,9 @@
                 </button>
                 
                 <button class="module-button" onclick="selectModule('module2')">
-                    <div class="icon">🕵️</div>
+                    <div class="icon">🏛️</div>
                     <h3>Module 2</h3>
-                    <p>Phishing & Spoofed Website Detection</p>
+                    <p>Government Impersonation Detection</p>
                     <span class="status">● Active</span>
                 </button>
             </div>
@@ -167,104 +167,107 @@
             </div>
         </section>
 
-        <!-- Module 2: Phishing & Spoofing Detection -->
+        <!-- Module 2: Government Impersonation Detection System (GIDS) -->
         <section class="scan-section" id="module2Section" style="display: none;">
-            <h2>🕵️ Phishing Site Detection</h2>
+            <h2>🏛️ Government Impersonation Detection System (GIDS)</h2>
             
             <!-- Scan Configuration -->
             <div class="config-panel">
                 <h3>Scan Configuration</h3>
                 
-                <div class="form-group">
-                    <label for="siteDomain">Site Domain:</label>
-                    <input type="text" id="siteDomain" value="gov.in" placeholder="e.g., gov.in, example.com">
-                    <small>Enter domain to scan for phishing indicators (default: gov.in)</small>
-                </div>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                    <strong>Primary Dork:</strong> intitle:"aadhaar login" -site:gov.in
+                </p>
 
                 <div class="form-group">
-                    <label>Phishing Types to Scan:</label>
+                    <label>Government Services to Scan:</label>
                     <div class="checkbox-grid">
                         <label class="checkbox-label">
-                            <input type="checkbox" name="appType" value="betting_apps" checked>
-                            <span>🎰 Betting Apps</span>
-                            <small>(site:DOMAIN "betting apps")</small>
+                            <input type="checkbox" name="impersonationType" value="aadhaar_login" checked>
+                            <span>🔐 Aadhaar Login</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="appType" value="trading_apps" checked>
-                            <span>📈 Trading Apps</span>
-                            <small>(site:DOMAIN "trading apps")</small>
+                            <input type="checkbox" name="impersonationType" value="pan_verification" checked>
+                            <span>💳 PAN Verification</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="appType" value="rummy_apps" checked>
-                            <span>🃏 Rummy Apps</span>
-                            <small>(site:DOMAIN "rummy apps")</small>
+                            <input type="checkbox" name="impersonationType" value="voter_registration" checked>
+                            <span>🗳️ Voter Registration</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="impersonationType" value="passport_services">
+                            <span>✈️ Passport Services</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="impersonationType" value="license_services">
+                            <span>🚗 License Services</span>
                         </label>
                     </div>
                 </div>
 
-                <button class="btn-primary" onclick="startPhishingSiteScan()">
+                <button class="btn-primary" onclick="startGIDSScan()">
                     🚀 Start Scanning
                 </button>
             </div>
 
             <!-- Progress Panel -->
-            <div class="progress-panel" id="phishing-progressPanel" style="display: none;">
+            <div class="progress-panel" id="gids-progressPanel" style="display: none;">
                 <h3>Scanning Progress</h3>
                 <div class="progress-bar">
-                    <div class="progress-fill" id="phishing-progressFill" style="width: 0%;">
-                        <span id="phishing-progressPercent">0%</span>
+                    <div class="progress-fill" id="gids-progressFill" style="width: 0%;">
+                        <span id="gids-progressPercent">0%</span>
                     </div>
                 </div>
                 <div class="progress-text">
-                    <p id="phishing-progressText">Initializing scan...</p>
+                    <p id="gids-progressText">Initializing scan...</p>
                 </div>
                 <div class="scan-stats">
                     <div class="stat-item">
                         <span class="stat-label">Scan ID</span>
-                        <span class="stat-value" id="phishing-scanId">-</span>
+                        <span class="stat-value" id="gids-scanId">-</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Status</span>
-                        <span class="stat-value" id="phishing-scanStatus">Starting...</span>
+                        <span class="stat-value" id="gids-scanStatus">Starting...</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Findings</span>
-                        <span class="stat-value" id="phishing-findingsCount">0</span>
+                        <span class="stat-label">Threats Found</span>
+                        <span class="stat-value" id="gids-findingsCount">0</span>
                     </div>
                 </div>
             </div>
 
             <!-- Results Panel -->
-            <div class="results-panel" id="phishing-resultsPanel" style="display: none;">
-                <h3>🎯 Phishing Detection Results</h3>
-                <div class="results-summary" id="phishing-resultsSummary"></div>
+            <div class="results-panel" id="gids-resultsPanel" style="display: none;">
+                <h3>🎯 Government Impersonation Detection Results</h3>
+                <div class="results-summary" id="gids-resultsSummary"></div>
                 
                 <!-- Filter buttons -->
                 <div class="filter-buttons">
-                    <button class="filter-btn active" onclick="filterPhishingResults('all')">All Results</button>
-                    <button class="filter-btn" onclick="filterPhishingResults('CRITICAL')">🔴 Critical</button>
-                    <button class="filter-btn" onclick="filterPhishingResults('HIGH')">🟠 High</button>
-                    <button class="filter-btn" onclick="filterPhishingResults('MEDIUM')">🟡 Medium</button>
+                    <button class="filter-btn active" onclick="filterGIDSResults('all')">All Results</button>
+                    <button class="filter-btn" onclick="filterGIDSResults('CRITICAL')">🔴 Critical</button>
+                    <button class="filter-btn" onclick="filterGIDSResults('HIGH')">🟠 High</button>
+                    <button class="filter-btn" onclick="filterGIDSResults('MEDIUM')">🟡 Medium</button>
                 </div>
 
                 <div class="results-table-container">
-                    <table class="results-table" id="phishing-resultsTable">
+                    <table class="results-table" id="gids-resultsTable">
                         <thead>
                             <tr>
-                                <th>URL</th>
-                                <th>App Type</th>
+                                <th>Impersonated Service</th>
+                                <th>Domain</th>
                                 <th>Risk Level</th>
                                 <th>Confidence</th>
-                                <th>Indicators</th>
+                                <th>Threat Details</th>
                             </tr>
                         </thead>
-                        <tbody id="phishing-resultsTableBody">
+                        <tbody id="gids-resultsTableBody">
                         </tbody>
                     </table>
                 </div>
                 <div class="action-buttons">
-                    <button class="btn-secondary" onclick="exportPhishingResults()">📥 Export Results</button>
-                    <button class="btn-primary" onclick="resetPhishingScan()">🔄 New Scan</button>
+                    <button class="btn-secondary" onclick="exportGIDSResults()">📥 Export Results</button>
+                    <button class="btn-primary" onclick="resetGIDSScan()">🔄 New Scan</button>
                 </div>
             </div>
         </section>
