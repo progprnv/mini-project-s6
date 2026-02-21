@@ -1,10 +1,10 @@
 # Backend Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
 
 # Database
-sqlalchemy==2.0.23
+sqlalchemy>=2.0.40
 aiosqlite==0.19.0
 
 # Google Search API
@@ -14,27 +14,27 @@ google-api-python-client==2.108.0
 pdfminer.six==20221105
 python-docx==1.1.0
 beautifulsoup4==4.12.2
-lxml==4.9.3
-Pillow==10.1.0
-pytesseract==0.3.10
+lxml>=5.0.0
+Pillow>=11.0.0
+pytesseract>=0.3.13
 
 # HTTP Requests
 requests==2.31.0
-aiohttp==3.9.1
-httpx==0.25.2
+aiohttp>=3.10.0
+httpx>=0.27.0
 
 # Email
 python-dotenv==1.0.0
 
 # Utilities
 python-dateutil==2.8.2
-pydantic==2.5.2
-pydantic-settings==2.1.0
+pydantic>=2.10.0
+pydantic-settings>=2.5.0
 
 # Module 2: Phishing Detection
-pyOpenSSL==23.3.0
-cryptography==41.0.7
+pyOpenSSL>=24.0.0
+cryptography>=42.0.0
 certifi==2023.7.22
-python-Levenshtein==0.21.1
+python-Levenshtein>=0.27.0
 dnspython==2.4.2
 

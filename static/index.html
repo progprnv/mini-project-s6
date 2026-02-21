@@ -3,292 +3,276 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cybersecurity Detection Framework - Module 1</title>
+    <title>CyberShield — Sensitive Data & Spoofing Detection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <h1>🔒 Automated Sensitive Data & Spoofing Detection Framework</h1>
-            <p class="subtitle">Protecting Indian Government Digital Infrastructure</p>
+
+    <!-- Cyber Particle Background -->
+    <canvas id="cyberCanvas"></canvas>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">CyberShield</span>
+                <span class="brand-version">v2.0</span>
+            </div>
         </div>
-    </header>
 
-    <!-- Main Dashboard -->
-    <main class="container">
-        <!-- Module Selection -->
-        <section class="module-selection" id="moduleSelection">
-            <h2>Select Detection Module</h2>
-            <div class="button-grid">
-                <button class="module-button active" onclick="selectModule('module1')">
-                    <div class="icon">📄</div>
-                    <h3>Module 1</h3>
-                    <p>Sensitive Data Exposure Detection</p>
-                    <span class="status">● Active</span>
-                </button>
-                
-                <button class="module-button" onclick="selectModule('module2')">
-                    <div class="icon">🏛️</div>
-                    <h3>Module 2</h3>
-                    <p>Government Impersonation Detection</p>
-                    <span class="status">● Active</span>
-                </button>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Modules</div>
+            <button class="nav-item active" onclick="selectModule('module1')" id="nav-module1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Sensitive Data</span>
+            </button>
+            <button class="nav-item" onclick="selectModule('module2')" id="nav-module2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span>Gov Impersonation</span>
+            </button>
+
+            <div class="nav-section-label" style="margin-top:24px;">History</div>
+            <button class="nav-item" onclick="scrollToRecent()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Recent Scans</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <div class="status-dot"></div>
+                <span>System Online</span>
             </div>
-        </section>
-
-        <!-- Module 1: Sensitive Data Scan -->
-        <section class="scan-section" id="module1Section">
-            <h2>🔍 Sensitive Data Exposure Scan</h2>
-            
-            <!-- Scan Configuration -->
-            <div class="config-panel">
-                <h3>Scan Configuration</h3>
-                
-                <div class="form-group">
-                    <label>Data Types to Detect:</label>
-                    <div class="checkbox-grid">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="dataType" value="aadhaar" checked>
-                            <span>Aadhaar Numbers</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="dataType" value="pan" checked>
-                            <span>PAN Cards</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="dataType" value="bank_account">
-                            <span>Bank Accounts</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="dataType" value="voter_id">
-                            <span>Voter IDs</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="dataType" value="passport">
-                            <span>Passport Numbers</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>File Types:</label>
-                    <div class="checkbox-grid">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="fileType" value="pdf" checked>
-                            <span>PDF</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="fileType" value="doc" checked>
-                            <span>DOC</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="fileType" value="docx" checked>
-                            <span>DOCX</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="fileType" value="html">
-                            <span>HTML</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="domain">Domain Scope:</label>
-                        <input type="text" id="domain" value="gov.in" placeholder="gov.in">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="maxResults">Max Results:</label>
-                        <input type="number" id="maxResults" value="10" min="1" max="50">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="sendEmail" checked>
-                        <span>Automatically send report to CERT-In (vdisclose@cert-in.org.in)</span>
-                    </label>
-                </div>
-
-                <button class="btn-primary" onclick="startScan()">
-                    🚀 Start Scan
-                </button>
-            </div>
-
-            <!-- Scan Progress -->
-            <div class="progress-panel" id="progressPanel" style="display: none;">
-                <h3>Scan in Progress...</h3>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <p class="progress-text" id="progressText">Initializing scan...</p>
-                <div class="scan-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Scan ID:</span>
-                        <span class="stat-value" id="scanId">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Status:</span>
-                        <span class="stat-value" id="scanStatus">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Detections:</span>
-                        <span class="stat-value" id="detectionsCount">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Results Panel -->
-            <div class="results-panel" id="resultsPanel" style="display: none;">
-                <h3>Scan Results</h3>
-                <div class="results-summary" id="resultsSummary"></div>
-                <div class="results-table-container">
-                    <table class="results-table" id="resultsTable">
-                        <thead>
-                            <tr>
-                                <th>Data Type</th>
-                                <th>File URL</th>
-                                <th>Confidence</th>
-                                <th>Evidence</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsTableBody">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn-secondary" onclick="exportResults()">📥 Export Results</button>
-                    <button class="btn-secondary" onclick="viewFullReport()">📄 View Full Report</button>
-                    <button class="btn-primary" onclick="resetScan()">🔄 New Scan</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Module 2: Government Impersonation Detection System (GIDS) -->
-        <section class="scan-section" id="module2Section" style="display: none;">
-            <h2>🏛️ Government Impersonation Detection System (GIDS)</h2>
-            
-            <!-- Scan Configuration -->
-            <div class="config-panel">
-                <h3>Scan Configuration</h3>
-                
-                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
-                    <strong>Primary Dork:</strong> intitle:"aadhaar login" -site:gov.in
-                </p>
-
-                <div class="form-group">
-                    <label>Government Services to Scan:</label>
-                    <div class="checkbox-grid">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="impersonationType" value="aadhaar_login" checked>
-                            <span>🔐 Aadhaar Login</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="impersonationType" value="pan_verification" checked>
-                            <span>💳 PAN Verification</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="impersonationType" value="voter_registration" checked>
-                            <span>🗳️ Voter Registration</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="impersonationType" value="passport_services">
-                            <span>✈️ Passport Services</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="impersonationType" value="license_services">
-                            <span>🚗 License Services</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button class="btn-primary" onclick="startGIDSScan()">
-                    🚀 Start Scanning
-                </button>
-            </div>
-
-            <!-- Progress Panel -->
-            <div class="progress-panel" id="gids-progressPanel" style="display: none;">
-                <h3>Scanning Progress</h3>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="gids-progressFill" style="width: 0%;">
-                        <span id="gids-progressPercent">0%</span>
-                    </div>
-                </div>
-                <div class="progress-text">
-                    <p id="gids-progressText">Initializing scan...</p>
-                </div>
-                <div class="scan-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Scan ID</span>
-                        <span class="stat-value" id="gids-scanId">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Status</span>
-                        <span class="stat-value" id="gids-scanStatus">Starting...</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Threats Found</span>
-                        <span class="stat-value" id="gids-findingsCount">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Results Panel -->
-            <div class="results-panel" id="gids-resultsPanel" style="display: none;">
-                <h3>🎯 Government Impersonation Detection Results</h3>
-                <div class="results-summary" id="gids-resultsSummary"></div>
-                
-                <!-- Filter buttons -->
-                <div class="filter-buttons">
-                    <button class="filter-btn active" onclick="filterGIDSResults('all')">All Results</button>
-                    <button class="filter-btn" onclick="filterGIDSResults('CRITICAL')">🔴 Critical</button>
-                    <button class="filter-btn" onclick="filterGIDSResults('HIGH')">🟠 High</button>
-                    <button class="filter-btn" onclick="filterGIDSResults('MEDIUM')">🟡 Medium</button>
-                </div>
-
-                <div class="results-table-container">
-                    <table class="results-table" id="gids-resultsTable">
-                        <thead>
-                            <tr>
-                                <th>Impersonated Service</th>
-                                <th>Domain</th>
-                                <th>Risk Level</th>
-                                <th>Confidence</th>
-                                <th>Threat Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="gids-resultsTableBody">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn-secondary" onclick="exportGIDSResults()">📥 Export Results</button>
-                    <button class="btn-primary" onclick="resetGIDSScan()">🔄 New Scan</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Recent Scans -->
-        <section class="recent-scans" id="recentScans">
-            <h2>📊 Recent Scans</h2>
-            <div id="recentScansList" class="scans-list">
-                <p class="empty-state">No recent scans. Start your first scan above.</p>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 Automated Cybersecurity Detection Framework | 
-               <a href="mailto:vdisclose@cert-in.org.in">CERT-In</a> | 
-               Ethical Security Research</p>
         </div>
-    </footer>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="topbar-title">
+                <h1 id="pageTitle">Sensitive Data Exposure Detection</h1>
+                <p class="topbar-subtitle">Protecting Indian Government Digital Infrastructure</p>
+            </div>
+            <div class="topbar-actions">
+                <div class="health-badge" id="healthBadge" title="API Health">
+                    <div class="health-dot"></div>
+                    <span>Healthy</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="content">
+
+            <!-- ====== MODULE 1 ====== -->
+            <section id="module1Section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Scan Configuration
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Data Types to Detect</label>
+                            <div class="chip-grid">
+                                <label class="chip"><input type="checkbox" name="dataType" value="aadhaar" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="6" y1="14" x2="6.01" y2="14"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="18" y2="14"/></svg></span><span class="chip-text">Aadhaar</span></span></label>
+                                <label class="chip"><input type="checkbox" name="dataType" value="pan" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="chip-text">PAN Card</span></span></label>
+                                <label class="chip"><input type="checkbox" name="dataType" value="bank_account"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span><span class="chip-text">Bank Account</span></span></label>
+                                <label class="chip"><input type="checkbox" name="dataType" value="voter_id"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="chip-text">Voter ID</span></span></label>
+                                <label class="chip"><input type="checkbox" name="dataType" value="passport"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span><span class="chip-text">Passport</span></span></label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">File Types</label>
+                            <div class="chip-grid">
+                                <label class="chip chip-sm"><input type="checkbox" name="fileType" value="pdf" checked><span class="chip-body"><span class="chip-text">PDF</span></span></label>
+                                <label class="chip chip-sm"><input type="checkbox" name="fileType" value="doc" checked><span class="chip-body"><span class="chip-text">DOC</span></span></label>
+                                <label class="chip chip-sm"><input type="checkbox" name="fileType" value="docx" checked><span class="chip-body"><span class="chip-text">DOCX</span></span></label>
+                                <label class="chip chip-sm"><input type="checkbox" name="fileType" value="html"><span class="chip-body"><span class="chip-text">HTML</span></span></label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="domain">Domain Scope</label>
+                                <input type="text" id="domain" class="form-input" value="gov.in" placeholder="gov.in">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="maxResults">Max Results</label>
+                                <input type="number" id="maxResults" class="form-input" value="10" min="1" max="50">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="toggle-label">
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="sendEmail" checked>
+                                    <span class="toggle-slider"></span>
+                                </div>
+                                <span>Auto-report to CERT-In (<code>vdisclose@cert-in.org.in</code>)</span>
+                            </label>
+                        </div>
+                        <button class="btn btn-primary btn-lg" onclick="startScan()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Start Scan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="card" id="progressPanel" style="display:none;">
+                    <div class="card-header"><h2 class="card-title"><span class="spinner"></span> Scan in Progress</h2></div>
+                    <div class="card-body">
+                        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                        <p class="progress-text" id="progressText">Initializing scan...</p>
+                        <div class="stat-row">
+                            <div class="stat-card"><span class="stat-label">Scan ID</span><span class="stat-value" id="scanId">—</span></div>
+                            <div class="stat-card"><span class="stat-label">Status</span><span class="stat-value" id="scanStatus">—</span></div>
+                            <div class="stat-card"><span class="stat-label">Detections</span><span class="stat-value accent" id="detectionsCount">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="card" id="resultsPanel" style="display:none;">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            Scan Results
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="results-summary" id="resultsSummary"></div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="resultsTable">
+                                <thead><tr><th>Data Type</th><th>File URL</th><th>Confidence</th><th>Evidence</th><th>Action</th></tr></thead>
+                                <tbody id="resultsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-ghost" onclick="exportResults()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export CSV
+                            </button>
+                            <button class="btn btn-primary" onclick="resetScan()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                New Scan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====== MODULE 2 ====== -->
+            <section id="module2Section" style="display:none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Gov Impersonation Scan
+                        </h2>
+                        <span class="badge badge-info">Dork: intitle:"aadhaar login" -site:gov.in</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Government Services to Scan</label>
+                            <div class="chip-grid">
+                                <label class="chip"><input type="checkbox" name="impersonationType" value="aadhaar_login" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span class="chip-text">Aadhaar Login</span></span></label>
+                                <label class="chip"><input type="checkbox" name="impersonationType" value="pan_verification" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="chip-text">PAN Verification</span></span></label>
+                                <label class="chip"><input type="checkbox" name="impersonationType" value="voter_registration" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="chip-text">Voter Registration</span></span></label>
+                                <label class="chip"><input type="checkbox" name="impersonationType" value="passport_services"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span><span class="chip-text">Passport Services</span></span></label>
+                                <label class="chip"><input type="checkbox" name="impersonationType" value="license_services"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="18" y2="14"/></svg></span><span class="chip-text">License Services</span></span></label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-lg" onclick="startGIDSScan()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Start Scanning
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="card" id="gids-progressPanel" style="display:none;">
+                    <div class="card-header"><h2 class="card-title"><span class="spinner"></span> Scanning in Progress</h2></div>
+                    <div class="card-body">
+                        <div class="progress-track"><div class="progress-fill" id="gids-progressFill" style="width:0%;"><span id="gids-progressPercent">0%</span></div></div>
+                        <p class="progress-text" id="gids-progressText">Initializing scan...</p>
+                        <div class="stat-row">
+                            <div class="stat-card"><span class="stat-label">Scan ID</span><span class="stat-value" id="gids-scanId">—</span></div>
+                            <div class="stat-card"><span class="stat-label">Status</span><span class="stat-value" id="gids-scanStatus">Starting...</span></div>
+                            <div class="stat-card"><span class="stat-label">Threats Found</span><span class="stat-value accent" id="gids-findingsCount">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="card" id="gids-resultsPanel" style="display:none;">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            Detection Results
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="results-summary" id="gids-resultsSummary"></div>
+                        <div class="filter-pills">
+                            <button class="pill active" onclick="filterGIDSResults('all')">All</button>
+                            <button class="pill pill-critical" onclick="filterGIDSResults('CRITICAL')">Critical</button>
+                            <button class="pill pill-high" onclick="filterGIDSResults('HIGH')">High</button>
+                            <button class="pill pill-medium" onclick="filterGIDSResults('MEDIUM')">Medium</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="gids-resultsTable">
+                                <thead><tr><th>Service</th><th>Domain</th><th>Risk</th><th>Confidence</th><th>Details</th></tr></thead>
+                                <tbody id="gids-resultsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-ghost" onclick="exportGIDSResults()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Export CSV
+                            </button>
+                            <button class="btn btn-primary" onclick="resetGIDSScan()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                New Scan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====== RECENT SCANS ====== -->
+            <section class="card" id="recentScans">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Recent Scans
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div id="recentScansList" class="scan-grid">
+                        <p class="empty-state">No recent scans yet — start your first scan above.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2025 CyberShield — Automated Cybersecurity Detection Framework &middot;
+                <a href="mailto:vdisclose@cert-in.org.in">CERT-In</a> &middot; Ethical Security Research</p>
+        </footer>
+    </div>
 
     <script src="/static/script.js"></script>
 </body>

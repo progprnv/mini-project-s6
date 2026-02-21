@@ -21,7 +21,7 @@ from document_processor import DocumentProcessor
 from sensitive_data_detector import SensitiveDataDetector
 from email_reporter import EmailReporter
 from government_impersonation_detector import GovernmentImersonationDetector
-from config import settings
+from config import settings, validate_api_config
 
 
 # Configure logging
@@ -98,6 +98,20 @@ async def health_check():
     }
 
 
+@app.get("/api/config/status")
+async def config_status():
+    """Check whether Google API keys are properly configured"""
+    info = validate_api_config()
+    return {
+        "configured": info["configured"],
+        "api_keys_count": info["api_keys_count"],
+        "search_engine_ids_count": info["search_engine_ids_count"],
+        "usable_pairs": info["usable_pairs"],
+        "mismatched": info["mismatched"],
+        "message": info["message"],
+    }
+
+
 @app.post("/api/scan/sensitive-data", response_model=ScanResponse)
 async def start_sensitive_data_scan(
     request: ScanRequest,
@@ -108,6 +122,14 @@ async def start_sensitive_data_scan(
     Start a sensitive data exposure scan
     """
     try:
+        # Pre-flight: reject immediately if API keys are not configured
+        api_info = validate_api_config()
+        if not api_info["configured"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Google API keys are not configured. Copy .env.example to .env and add your keys, then restart the server."
+            )
+
         # Create scan record
         scan = Scan(
             scan_type="sensitive_data",
@@ -467,6 +489,14 @@ async def start_government_impersonation_scan(
     Primary dork: intitle:"aadhaar login" -site:gov.in
     """
     try:
+        # Pre-flight: reject immediately if API keys are not configured
+        api_info = validate_api_config()
+        if not api_info["configured"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Google API keys are not configured. Copy .env.example to .env and add your keys, then restart the server."
+            )
+
         # Create scan record
         scan = Scan(
             scan_type="government_impersonation",
