@@ -42,6 +42,9 @@ wheels/
 *.log
 logs/
 
+# Backup files
+*.bak
+
 # Downloads
 downloads/
 temp/
