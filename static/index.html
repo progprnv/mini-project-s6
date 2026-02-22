@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberShield — Sensitive Data & Spoofing Detection</title>
+    <title>Automated Sensitive Data & Spoofing Detection Framework</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -19,10 +19,6 @@
         <div class="sidebar-brand">
             <div class="brand-icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <div class="brand-text">
-                <span class="brand-name">CyberShield</span>
-                <span class="brand-version">v2.0</span>
             </div>
         </div>
 
@@ -61,15 +57,10 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div class="topbar-title">
-                <h1 id="pageTitle">Sensitive Data Exposure Detection</h1>
-                <p class="topbar-subtitle">Protecting Indian Government Digital Infrastructure</p>
+                <h1 id="pageTitle">Automated Sensitive Data & Spoofing Detection Framework</h1>
+                <p class="topbar-subtitle">Module 1 — Sensitive Data Exposure Detection</p>
             </div>
-            <div class="topbar-actions">
-                <div class="health-badge" id="healthBadge" title="API Health">
-                    <div class="health-dot"></div>
-                    <span>Healthy</span>
-                </div>
-            </div>
+            <div class="topbar-actions"></div>
         </header>
 
         <!-- Content -->
@@ -132,8 +123,21 @@
 
                 <!-- Progress -->
                 <div class="card" id="progressPanel" style="display:none;">
-                    <div class="card-header"><h2 class="card-title"><span class="spinner"></span> Scan in Progress</h2></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><span class="scan-pulse-icon"></span> Scan in Progress</h2>
+                        <span class="scan-elapsed" id="scanTimer">00:00</span>
+                    </div>
                     <div class="card-body">
+                        <canvas id="ecgCanvas" class="scan-monitor"></canvas>
+                        <div class="scan-phases" id="scanPhases">
+                            <div class="phase active" data-phase="discovery"><span class="phase-dot"></span><span class="phase-label">Discovery</span></div>
+                            <div class="phase-connector"></div>
+                            <div class="phase" data-phase="analysis"><span class="phase-dot"></span><span class="phase-label">Analysis</span></div>
+                            <div class="phase-connector"></div>
+                            <div class="phase" data-phase="detection"><span class="phase-dot"></span><span class="phase-label">Detection</span></div>
+                            <div class="phase-connector"></div>
+                            <div class="phase" data-phase="report"><span class="phase-dot"></span><span class="phase-label">Report</span></div>
+                        </div>
                         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
                         <p class="progress-text" id="progressText">Initializing scan...</p>
                         <div class="stat-row">
@@ -204,8 +208,21 @@
 
                 <!-- Progress -->
                 <div class="card" id="gids-progressPanel" style="display:none;">
-                    <div class="card-header"><h2 class="card-title"><span class="spinner"></span> Scanning in Progress</h2></div>
+                    <div class="card-header">
+                        <h2 class="card-title"><span class="scan-pulse-icon"></span> Scanning in Progress</h2>
+                        <span class="scan-elapsed" id="gids-scanTimer">00:00</span>
+                    </div>
                     <div class="card-body">
+                        <canvas id="ecgCanvas2" class="scan-monitor"></canvas>
+                        <div class="scan-phases" id="gidsPhases">
+                            <div class="phase active" data-phase="discovery"><span class="phase-dot"></span><span class="phase-label">Discovery</span></div>
+                            <div class="phase-connector"></div>
+                            <div class="phase" data-phase="analysis"><span class="phase-dot"></span><span class="phase-label">Analysis</span></div>
+                            <div class="phase-connector"></div>
+                            <div class="phase" data-phase="detection"><span class="phase-dot"></span><span class="phase-label">Detection</span></div>
+                            <div class="phase-connector"></div>
+                            <div class="phase" data-phase="report"><span class="phase-dot"></span><span class="phase-label">Report</span></div>
+                        </div>
                         <div class="progress-track"><div class="progress-fill" id="gids-progressFill" style="width:0%;"><span id="gids-progressPercent">0%</span></div></div>
                         <p class="progress-text" id="gids-progressText">Initializing scan...</p>
                         <div class="stat-row">
@@ -269,7 +286,7 @@
         </main>
 
         <footer class="footer">
-            <p>&copy; 2025 CyberShield — Automated Cybersecurity Detection Framework &middot;
+            <p>&copy; 2025 Automated Cybersecurity Detection Framework &middot;
                 <a href="mailto:vdisclose@cert-in.org.in">CERT-In</a> &middot; Ethical Security Research</p>
         </footer>
     </div>
