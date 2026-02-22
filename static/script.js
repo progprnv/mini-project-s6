@@ -1,5 +1,5 @@
 /* ===================================================================
-   CyberShield — UI Logic
+   Cybersecurity Detection — UI Logic
    =================================================================== */
 
 const API_BASE_URL = '';
@@ -25,19 +25,20 @@ function selectModule(module) {
     const nav1 = document.getElementById('nav-module1');
     const nav2 = document.getElementById('nav-module2');
     const title = document.getElementById('pageTitle');
+    const subtitle = document.querySelector('.topbar-subtitle');
 
     if (module === 'module1') {
         m1.style.display = 'block';
         m2.style.display = 'none';
         nav1.classList.add('active');
         nav2.classList.remove('active');
-        title.textContent = 'Sensitive Data Exposure Detection';
+        if (subtitle) subtitle.textContent = 'Module 1 — Sensitive Data Exposure Detection';
     } else {
         m1.style.display = 'none';
         m2.style.display = 'block';
         nav1.classList.remove('active');
         nav2.classList.add('active');
-        title.textContent = 'Government Impersonation Detection';
+        if (subtitle) subtitle.textContent = 'Module 2 — Government Impersonation Detection';
     }
     // close mobile sidebar
     document.getElementById('sidebar').classList.remove('open');
@@ -50,55 +51,10 @@ async function checkHealth() {
     try {
         const res = await fetch('/api/health');
         const data = await res.json();
-        const badge = document.getElementById('healthBadge');
-        if (data.status === 'healthy') {
-            badge.querySelector('span').textContent = 'Healthy';
-            badge.style.borderColor = 'rgba(81,207,102,.2)';
-            badge.style.color = '#51cf66';
-        }
+        // Health check silent - no badge
     } catch {
-        const badge = document.getElementById('healthBadge');
-        badge.querySelector('span').textContent = 'Offline';
-        badge.style.borderColor = 'rgba(255,77,106,.2)';
-        badge.style.color = '#ff4d6a';
+        // System offline - silent
     }
-
-    // Also check API-key configuration so the user sees an early warning
-    try {
-        const cfgRes = await fetch('/api/config/status');
-        const cfg = await cfgRes.json();
-        let banner = document.getElementById('configBanner');
-        if (!cfg.configured) {
-            if (!banner) {
-                banner = document.createElement('div');
-                banner.id = 'configBanner';
-                banner.style.cssText =
-                    'background:#2a1a00;border:1px solid #ff922b;color:#ffd8a8;' +
-                    'padding:12px 18px;border-radius:8px;margin:12px 24px;font-size:14px;';
-                const main = document.querySelector('main') || document.body;
-                main.prepend(banner);
-            }
-            banner.innerHTML =
-                '<strong>⚠️ Google API keys not configured.</strong> ' +
-                'Search will use a fallback web-scraping mode which may be less reliable. ' +
-                'For best results, copy <code>.env.example</code> to <code>.env</code>, add your keys, and restart the server.';
-        } else if (cfg.mismatched) {
-            if (!banner) {
-                banner = document.createElement('div');
-                banner.id = 'configBanner';
-                banner.style.cssText =
-                    'background:#1a2a00;border:1px solid #a9e34b;color:#d8f5a2;' +
-                    'padding:12px 18px;border-radius:8px;margin:12px 24px;font-size:14px;';
-                const main = document.querySelector('main') || document.body;
-                main.prepend(banner);
-            }
-            banner.textContent =
-                '⚠️ API key / Search Engine ID count mismatch — only ' +
-                cfg.usable_pairs + ' pair(s) will be used.';
-        } else if (banner) {
-            banner.remove();
-        }
-    } catch { /* config endpoint unavailable — ignore */ }
 }
 
 /* ===================== MODULE 1: SENSITIVE DATA ===================== */
@@ -120,6 +76,7 @@ async function startScan() {
         document.getElementById('resultsPanel').style.display = 'none';
         document.getElementById('progressText').textContent = 'Initializing scan...';
         document.getElementById('progressFill').style.width = '0%';
+        startECG('ecgCanvas');
 
         const response = await fetch('/api/scan/sensitive-data', {
             method: 'POST',
@@ -156,15 +113,18 @@ function pollScanStatus(scanId) {
             if (data.status === 'in_progress') {
                 progress = Math.min(progress + 10, 90);
                 document.getElementById('progressFill').style.width = progress + '%';
+                updateScanPhases('scanPhases', progress);
             } else if (data.status === 'completed') {
                 clearInterval(pollInterval);
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('progressText').textContent = 'Scan completed!';
+                stopECG('ecgCanvas');
                 setTimeout(() => displayResults(data), 800);
             } else if (data.status === 'failed') {
                 clearInterval(pollInterval);
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('progressText').textContent = 'Scan finished (no results found)';
+                stopECG('ecgCanvas');
                 setTimeout(() => displayResults(data), 800);
             }
         } catch (e) { console.error('Poll error:', e); }
@@ -308,6 +268,7 @@ async function startGIDSScan() {
         document.getElementById('gids-progressText').textContent = 'Initializing scan...';
         document.getElementById('gids-progressFill').style.width = '0%';
         document.getElementById('gids-progressPercent').textContent = '0%';
+        startECG('ecgCanvas2');
 
         const res = await fetch('/api/scan/government-impersonation', {
             method: 'POST',
@@ -341,6 +302,7 @@ function pollGIDSScanStatus(scanId) {
                 document.getElementById('gids-progressFill').style.width = progress + '%';
                 document.getElementById('gids-progressPercent').textContent = Math.round(progress) + '%';
                 document.getElementById('gids-scanStatus').textContent = 'Scanning…';
+                updateScanPhases('gidsPhases', progress);
             } else if (data.status === 'completed') {
                 clearInterval(gidsPollInterval);
                 document.getElementById('gids-progressFill').style.width = '100%';
@@ -348,6 +310,7 @@ function pollGIDSScanStatus(scanId) {
                 document.getElementById('gids-progressText').textContent = 'Scan completed!';
                 document.getElementById('gids-scanStatus').textContent = 'Completed';
                 document.getElementById('gids-findingsCount').textContent = data.results_count;
+                stopECG('ecgCanvas2');
                 setTimeout(() => displayGIDSResults(data), 800);
             } else if (data.status === 'failed') {
                 clearInterval(gidsPollInterval);
@@ -355,6 +318,7 @@ function pollGIDSScanStatus(scanId) {
                 document.getElementById('gids-progressPercent').textContent = '100%';
                 document.getElementById('gids-progressText').textContent = 'Scan finished (no threats found)';
                 document.getElementById('gids-scanStatus').textContent = 'Done';
+                stopECG('ecgCanvas2');
                 setTimeout(() => displayGIDSResults(data), 800);
             }
             document.getElementById('gids-findingsCount').textContent = data.results_count;
@@ -547,4 +511,246 @@ function initCyberCanvas() {
 
     init();
     animate();
+}
+
+/* ===================== SCAN MONITOR ANIMATION ===================== */
+const scanMonitors = {};
+const scanTimers = {};
+
+function startScanTimer(timerId) {
+    const start = Date.now();
+    scanTimers[timerId] = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - start) / 1000);
+        const el = document.getElementById(timerId);
+        if (el) el.textContent = String(Math.floor(elapsed / 60)).padStart(2, '0') + ':' + String(elapsed % 60).padStart(2, '0');
+    }, 1000);
+}
+function stopScanTimer(timerId) {
+    if (scanTimers[timerId]) { clearInterval(scanTimers[timerId]); delete scanTimers[timerId]; }
+}
+
+function updateScanPhases(containerId, progress) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const phases = container.querySelectorAll('.phase');
+    const connectors = container.querySelectorAll('.phase-connector');
+    const thresholds = [0, 25, 50, 75];
+    phases.forEach((p, i) => {
+        p.classList.remove('active', 'completed');
+        if (progress >= 100) { p.classList.add('completed'); }
+        else if (progress >= thresholds[i] && (i === 3 || progress < thresholds[i + 1])) { p.classList.add('active'); }
+        else if (progress >= thresholds[i]) { p.classList.add('completed'); }
+    });
+    connectors.forEach((c, i) => { c.classList.toggle('filled', progress > thresholds[i + 1]); });
+}
+
+function startECG(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 2;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    const padding = { top: 26, bottom: 20, left: 0, right: 0 };
+    const graphH = h - padding.top - padding.bottom;
+    const graphW = w;
+    const maxPoints = Math.floor(graphW / 2);
+
+    // Professional cybersecurity theme colors
+    const accent = '#00d4aa';
+    const accentGlow = 'rgba(0,212,170,.35)';
+    const fillTop = 'rgba(0,212,170,.14)';
+    const fillBot = 'rgba(0,212,170,.01)';
+    const gridColor = 'rgba(255,255,255,.035)';
+    const gridMajor = 'rgba(255,255,255,.07)';
+    const labelColor = 'rgba(255,255,255,.25)';
+    const bgColor = '#0f1117';
+
+    const dataPoints = [];
+    let baseLevel = 0.3 + Math.random() * 0.3;
+    let targetLevel = baseLevel;
+    let currentLevel = baseLevel;
+    let tick = 0;
+    let itemsScanned = 0;
+    let animId;
+
+    function genValue() {
+        tick++;
+        if (tick % 50 === 0) targetLevel = 0.15 + Math.random() * 0.65;
+        currentLevel += (targetLevel - currentLevel) * 0.04;
+        const noise = Math.sin(tick * 0.12) * 0.06 + Math.sin(tick * 0.05) * 0.1 + (Math.random() - 0.5) * 0.04;
+        itemsScanned += Math.floor(Math.random() * 3);
+        return Math.max(0.05, Math.min(1, currentLevel + noise));
+    }
+
+    function draw() {
+        dataPoints.push(genValue());
+        if (dataPoints.length > maxPoints) dataPoints.shift();
+
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, w, h);
+
+        // Horizontal grid
+        const rows = 4;
+        for (let i = 0; i <= rows; i++) {
+            const y = padding.top + (graphH / rows) * i;
+            ctx.strokeStyle = (i === 0 || i === rows) ? gridMajor : gridColor;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // Vertical grid (scrolling)
+        const spacing = 50;
+        const offset = (tick * 1.5) % spacing;
+        ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
+        for (let gx = w - offset; gx >= 0; gx -= spacing) {
+            ctx.beginPath(); ctx.moveTo(gx, padding.top); ctx.lineTo(gx, padding.top + graphH); ctx.stroke();
+        }
+
+        if (dataPoints.length < 2) { animId = requestAnimationFrame(draw); return; }
+
+        const stepX = graphW / maxPoints;
+        const startX = (maxPoints - dataPoints.length) * stepX;
+
+        // Area fill
+        const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + graphH);
+        grad.addColorStop(0, fillTop); grad.addColorStop(1, fillBot);
+
+        ctx.beginPath();
+        ctx.moveTo(startX, padding.top + graphH);
+        for (let i = 0; i < dataPoints.length; i++) {
+            const px = startX + i * stepX;
+            const py = padding.top + graphH - dataPoints[i] * graphH;
+            if (i === 0) ctx.lineTo(px, py);
+            else {
+                const prevX = startX + (i - 1) * stepX;
+                const prevY = padding.top + graphH - dataPoints[i - 1] * graphH;
+                ctx.bezierCurveTo((prevX + px) / 2, prevY, (prevX + px) / 2, py, px, py);
+            }
+        }
+        ctx.lineTo(startX + (dataPoints.length - 1) * stepX, padding.top + graphH);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Line
+        ctx.beginPath();
+        for (let i = 0; i < dataPoints.length; i++) {
+            const px = startX + i * stepX;
+            const py = padding.top + graphH - dataPoints[i] * graphH;
+            if (i === 0) ctx.moveTo(px, py);
+            else {
+                const prevX = startX + (i - 1) * stepX;
+                const prevY = padding.top + graphH - dataPoints[i - 1] * graphH;
+                ctx.bezierCurveTo((prevX + px) / 2, prevY, (prevX + px) / 2, py, px, py);
+            }
+        }
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = accentGlow;
+        ctx.shadowBlur = 6;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Glow dot on latest point
+        const lastX = startX + (dataPoints.length - 1) * stepX;
+        const lastY = padding.top + graphH - dataPoints[dataPoints.length - 1] * graphH;
+        ctx.beginPath(); ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = accent; ctx.fill();
+        ctx.beginPath(); ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,212,170,.18)'; ctx.fill();
+
+        // Header label
+        ctx.fillStyle = labelColor;
+        ctx.font = '600 9px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('SCAN ACTIVITY', 10, 15);
+
+        // Items counter
+        ctx.fillStyle = accent;
+        ctx.font = '700 11px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(itemsScanned + ' items analyzed', w - 10, 15);
+
+        // Time axis
+        ctx.fillStyle = labelColor;
+        ctx.font = '9px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        const interval = Math.floor(maxPoints / 5);
+        for (let i = 0; i < dataPoints.length; i += interval) {
+            const secs = Math.floor((dataPoints.length - i) * 0.1);
+            ctx.fillText('-' + secs + 's', startX + i * stepX, h - 4);
+        }
+        ctx.fillText('now', startX + (dataPoints.length - 1) * stepX, h - 4);
+
+        animId = requestAnimationFrame(draw);
+    }
+
+    // Start timer for the associated panel
+    const timerId = canvasId === 'ecgCanvas' ? 'scanTimer' : 'gids-scanTimer';
+    startScanTimer(timerId);
+
+    draw();
+    scanMonitors[canvasId] = { animId, ctx, w, h };
+}
+
+function stopECG(canvasId) {
+    const instance = scanMonitors[canvasId];
+    if (instance) {
+        cancelAnimationFrame(instance.animId);
+        const { ctx, w, h } = instance;
+
+        // Clean completion background
+        ctx.fillStyle = '#0f1117';
+        ctx.fillRect(0, 0, w, h);
+
+        // Subtle grid
+        const graphH = h - 46;
+        ctx.strokeStyle = 'rgba(255,255,255,.04)';
+        ctx.lineWidth = 0.5;
+        for (let gy = 26; gy <= 26 + graphH; gy += graphH / 4) {
+            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+        }
+
+        // Shield + checkmark
+        const cx = w / 2, cy = h / 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,212,170,.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,212,170,.4)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy);
+        ctx.lineTo(cx - 2, cy + 5);
+        ctx.lineTo(cx + 7, cy - 5);
+        ctx.strokeStyle = '#00d4aa';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(0,212,170,.45)';
+        ctx.font = '600 10px Inter, system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ANALYSIS COMPLETE', cx, cy + 34);
+
+        delete scanMonitors[canvasId];
+    }
+
+    // Stop associated timer
+    const timerId = canvasId === 'ecgCanvas' ? 'scanTimer' : 'gids-scanTimer';
+    stopScanTimer(timerId);
+
+    // Mark all phases complete
+    const phaseId = canvasId === 'ecgCanvas' ? 'scanPhases' : 'gidsPhases';
+    updateScanPhases(phaseId, 100);
 }
