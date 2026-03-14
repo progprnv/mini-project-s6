@@ -4,6 +4,75 @@
 
 const API_BASE_URL = '';
 
+// Store scan results for recent scans access
+const scanResultsCache = {};
+
+/* ===== MODAL DIALOG FUNCTIONS ===== */
+function showModal(title, message) {
+    const modalHtml = `
+        <div class="modal-overlay" id="modalOverlay" onclick="if(event.target.id === 'modalOverlay') closeModal()">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="modal-close" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>${message.replace(/\n/g, '<br>')}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="closeModal()">OK</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existing = document.getElementById('modalOverlay');
+    if (existing) existing.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function showConfirmModal(title, message, onConfirm) {
+    const modalHtml = `
+        <div class="modal-overlay" id="modalOverlay" onclick="if(event.target.id === 'modalOverlay') closeModal()">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="modal-close" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>${message.replace(/\n/g, '<br>')}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="confirmAction()">Confirm</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existing = document.getElementById('modalOverlay');
+    if (existing) existing.remove();
+    
+    window.confirmCallback = onConfirm;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeModal() {
+    const modal = document.getElementById('modalOverlay');
+    if (modal) modal.remove();
+    window.confirmCallback = null;
+}
+
+function confirmAction() {
+    if (window.confirmCallback) {
+        window.confirmCallback();
+    }
+    closeModal();
+}
+
 /* ---------- Sidebar & Navigation ---------- */
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
@@ -68,9 +137,8 @@ async function startScan() {
 
         const domain = document.getElementById('domain').value;
         const maxResults = parseInt(document.getElementById('maxResults').value);
-        const sendEmail = document.getElementById('sendEmail').checked;
 
-        const requestData = { data_types: dataTypes, file_types: fileTypes, domain, max_results: maxResults, send_email: sendEmail };
+        const requestData = { data_types: dataTypes, file_types: fileTypes, domain, max_results: maxResults };
 
         document.getElementById('progressPanel').style.display = 'block';
         document.getElementById('resultsPanel').style.display = 'none';
@@ -108,7 +176,6 @@ function pollScanStatus(scanId) {
             const response = await fetch(`/api/scan/${scanId}/status`);
             const data = await response.json();
             document.getElementById('scanStatus').textContent = data.status;
-            document.getElementById('detectionsCount').textContent = data.results_count;
 
             if (data.status === 'in_progress') {
                 progress = Math.min(progress + 10, 90);
@@ -118,12 +185,14 @@ function pollScanStatus(scanId) {
                 clearInterval(pollInterval);
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('progressText').textContent = 'Scan completed!';
+                document.getElementById('detectionsCount').textContent = data.results_count;
                 stopECG('ecgCanvas');
                 setTimeout(() => displayResults(data), 800);
             } else if (data.status === 'failed') {
                 clearInterval(pollInterval);
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('progressText').textContent = 'Scan finished (no results found)';
+                document.getElementById('detectionsCount').textContent = data.results_count;
                 stopECG('ecgCanvas');
                 setTimeout(() => displayResults(data), 800);
             }
@@ -134,6 +203,15 @@ function pollScanStatus(scanId) {
 function displayResults(data) {
     document.getElementById('progressPanel').style.display = 'none';
     document.getElementById('resultsPanel').style.display = 'block';
+
+    // Cache the scan results for recent scans access
+    scanResultsCache[data.scan_id] = {
+        type: 'module1',
+        data: data
+    };
+
+    // ✅ SET THE SCAN ID SO MAIN BUTTONS CAN FIND IT
+    document.getElementById('scanId').textContent = data.scan_id;
 
     const detections = data.detections || [];
     const summary = document.getElementById('resultsSummary');
@@ -150,9 +228,9 @@ function displayResults(data) {
     tbody.innerHTML = '';
 
     if (detections.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No sensitive data leaks detected.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No sensitive data leaks detected.</td></tr>';
     } else {
-        detections.forEach(urlItem => {
+        detections.forEach((urlItem, index) => {
             const urlDetections = urlItem.detections || [];
             if (!urlDetections.length) return;
             const dataTypes = urlItem.data_types || [];
@@ -165,6 +243,7 @@ function displayResults(data) {
             const leakIds = urlDetections.map(d => d.leak_id).join(',');
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td><input type="checkbox" class="result-checkbox" value="${urlItem.file_url}"></td>
                 <td><strong>${dataTypes.join(', ').replace(/_/g,' ').toUpperCase()}</strong></td>
                 <td><a href="${urlItem.file_url}" target="_blank">${urlItem.file_url.substring(0,55)}…</a></td>
                 <td class="${confClass}">${maxConf.toFixed(1)}%</td>
@@ -211,13 +290,35 @@ async function loadRecentScans() {
             data.scans.forEach(scan => {
                 const item = document.createElement('div');
                 item.className = 'scan-item';
-                item.onclick = () => viewScanDetails(scan.scan_id);
                 const statusClass = scan.status === 'completed' ? 'completed' : scan.status === 'failed' ? 'failed' : 'in_progress';
+                const scanType = scan.scan_type.replace(/_/g,' ');
+                
+                // Determine module type
+                let actionButton = '';
+                let scanModule = '';
+                if (scan.status === 'completed') {
+                    if (scan.scan_type.toLowerCase().includes('sensitive')) {
+                        actionButton = `<button class="btn btn-warning btn-sm" onclick="reportFromHistoryVuln(${scan.scan_id})">Send Alert</button>`;
+                        scanModule = 'module1';
+                    } else if (scan.scan_type.toLowerCase().includes('government') || scan.scan_type.toLowerCase().includes('impersonate')) {
+                        actionButton = `<button class="btn btn-danger btn-sm" onclick="reportFromHistoryAbuse(${scan.scan_id})">Send Report</button>`;
+                        scanModule = 'module2';
+                    }
+                }
+                
                 item.innerHTML = `
-                    <strong>Scan #${scan.scan_id}</strong>
-                    <span class="scan-item-status ${statusClass}">${scan.status}</span><br>
-                    <span style="color:var(--text-secondary);font-size:.85rem">${scan.scan_type.replace(/_/g,' ')} &middot; ${scan.results_count} results</span><br>
-                    <small>${new Date(scan.start_time).toLocaleString()}</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <div style="flex:1; cursor:pointer;" onclick="viewScanDetails(${scan.scan_id})">
+                            <strong>Scan #${scan.scan_id}</strong>
+                            <span class="scan-item-status ${statusClass}">${scan.status}</span><br>
+                            <span style="color:var(--text-secondary);font-size:.85rem">${scanType} &middot; ${scan.results_count} results</span><br>
+                            <small>${new Date(scan.start_time).toLocaleString()}</small>
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            ${actionButton}
+                            <button class="btn btn-danger btn-sm" onclick="deleteScan(${scan.scan_id})">Delete</button>
+                        </div>
+                    </div>
                 `;
                 list.appendChild(item);
             });
@@ -225,6 +326,42 @@ async function loadRecentScans() {
             list.innerHTML = '<p class="empty-state">No recent scans yet — start your first scan above.</p>';
         }
     } catch (e) { console.error('Error loading recent scans:', e); }
+}
+
+// Wrapper functions that call the history functions
+function reportFromHistoryVuln(scanId) {
+    console.log('🔹 reportFromHistoryVuln called with scanId:', scanId);
+    sendVulnerabilityReportFromHistory(scanId);
+}
+
+function reportFromHistoryAbuse(scanId) {
+    console.log('🔹 reportFromHistoryAbuse called with scanId:', scanId);
+    sendAbuseReportFromHistory(scanId);
+}
+
+/* ---------- Delete Scan ---------- */
+async function deleteScan(scanId) {
+    if (!confirm(`🗑️ Are you sure you want to delete Scan #${scanId}? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        console.log('🗑️ Deleting scan:', scanId);
+        const response = await fetch(`/api/scan/${scanId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            alert(`✅ Scan #${scanId} deleted successfully!`);
+            loadRecentScans(); // Reload the recent scans list
+        } else {
+            const errData = await response.json();
+            alert(`❌ Error: ${errData.detail || 'Failed to delete scan'}`);
+        }
+    } catch (error) {
+        alert(`❌ Error: ${error.message}`);
+        console.error('Delete error:', error);
+    }
 }
 
 async function viewScanDetails(scanId) {
@@ -255,6 +392,287 @@ async function deleteDetection(leakIds) {
             alert('Error: ' + (err.detail || 'Unknown'));
         }
     } catch (e) { alert('Error: ' + e.message); }
+}
+
+/* ---------- Checkbox Selection ---------- */
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.result-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+}
+
+function getSelectedUrls() {
+    const checkboxes = document.querySelectorAll('.result-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+/* ---------- Send Selected Results Report ---------- */
+async function sendSelectedReport() {
+    const selectedUrls = getSelectedUrls();
+    
+    if (selectedUrls.length === 0) {
+        showModal('No URLs Selected', 'Please select at least one URL to report');
+        return;
+    }
+    
+    const modal = showConfirmModal(
+        `Send Report for ${selectedUrls.length} URL(s)`,
+        `You are about to send a report for ${selectedUrls.length} selected URL(s) to CERT-In.\n\nThis will alert authorities about the sensitive data exposure on these specific URLs.`,
+        async () => {
+            try {
+                const scanId = document.getElementById('scanId').textContent;
+                const response = await fetch('/api/scan/send-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scan_id: parseInt(scanId),
+                        selected_urls: selectedUrls
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showModal('✅ Report Sent', `Report successfully sent to CERT-In!\n\nURLs reported: ${selectedUrls.length}`);
+                } else {
+                    const err = await response.json();
+                    showModal('❌ Error', 'Error sending report: ' + (err.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                showModal('❌ Error', 'Error: ' + error.message);
+            }
+        }
+    );
+}
+
+/* ---------- Send Vulnerability Report from History ---------- */
+async function sendVulnerabilityReportFromHistory(scanId) {
+    console.log('✅ sendVulnerabilityReportFromHistory started for scanId:', scanId);
+    try {
+        // Fetch scan details
+        const res = await fetch(`/api/scan/${scanId}/status`);
+        const data = await res.json();
+        
+        console.log('📊 Full scan data structure:', data);
+        console.log('📊 Detections array:', data.detections);
+        
+        if (!data.detections || data.detections.length === 0) {
+            alert('❌ No detections found in this scan.');
+            return;
+        }
+        
+        // Get all detected data types from the results - with detailed logging
+        const dataTypes = new Set();
+        data.detections.forEach((urlItem, idx) => {
+            console.log(`  Detection[${idx}]:`, JSON.stringify(urlItem));
+            const dataTypesList = urlItem.data_types || [];
+            console.log(`  Data types list for Detection[${idx}]:`, dataTypesList);
+            if (Array.isArray(dataTypesList)) {
+                dataTypesList.forEach(dt => {
+                    if (dt) dataTypes.add(String(dt).toLowerCase().trim());
+                });
+            }
+        });
+        
+        console.log('🔍 Final extracted data types set:', Array.from(dataTypes));
+        
+        if (dataTypes.size === 0) {
+            alert('❌ No data types detected in results. Check scan completed successfully.');
+            return;
+        }
+        
+        const dataTypeArray = Array.from(dataTypes);
+        let message = '🚨 VULNERABILITY REPORT\n\nDetected Data Types:\n';
+        dataTypeArray.forEach(dt => message += `  • ${dt.toUpperCase()}\n`);
+        message += `\nSend information disclosure vulnerability reports for these data types to CERT-In?`;
+        
+        if (!confirm(message)) {
+            return;
+        }
+        
+        let successCount = 0;
+        let failureCount = 0;
+        
+        for (const dataType of dataTypeArray) {
+            try {
+                const requestPayload = {
+                    scan_id: parseInt(scanId),
+                    data_type: dataType.trim()
+                };
+                console.log(`📤 Sending request:`, requestPayload);
+                
+                const response = await fetch('/api/scan/send-vulnerability-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestPayload)
+                });
+                
+                console.log(`Response status for ${dataType}:`, response.status, response.statusText);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    successCount++;
+                    console.log(`✅ Report sent for ${dataType}:`, result);
+                } else {
+                    const errData = await response.json();
+                    failureCount++;
+                    console.error(`❌ Failed for ${dataType}:`, errData);
+                }
+            } catch (error) {
+                failureCount++;
+                console.error(`💥 Exception for ${dataType}:`, error);
+            }
+        }
+        
+        alert(`📧 REPORTS SENT\\n\\n✅ Successful: ${successCount}\\n❌ Failed: ${failureCount}`);
+        
+    } catch (error) {
+        alert('Error: ' + (error.message || 'Unknown error occurred'));
+        console.error('💥 Top level exception:', error);
+    }
+}
+
+/* ---------- Send Abuse Report from History ---------- */
+async function sendAbuseReportFromHistory(scanId) {
+    console.log('✅ sendAbuseReportFromHistory started for scanId:', scanId);
+    try {
+        // Fetch scan details from government-impersonation endpoint
+        const res = await fetch(`/api/scan/${scanId}/government-impersonation`);
+        const data = await res.json();
+        
+        if (!data.findings || data.findings.length === 0) {
+            alert('❌ No impersonation threats found in this scan.');
+            return;
+        }
+        
+        // Get all detected impersonation types
+        const impersonationTypes = new Set();
+        data.findings.forEach(r => {
+            if (r.impersonation_type) {
+                impersonationTypes.add(r.impersonation_type);
+            }
+        });
+        
+        if (impersonationTypes.size === 0) {
+            alert('❌ No impersonation threats detected in results. Check scan completed successfully.');
+            return;
+        }
+        
+        const typeArray = Array.from(impersonationTypes);
+        let message = '⚠️ ABUSE REPORT - GOVERNMENT IMPERSONATION\n\nDetected Threat Types:\n';
+        typeArray.forEach(type => message += `  • ${type.replace(/_/g, ' ').toUpperCase()}\n`);
+        message += `\nSend abuse reports for detected government impersonation sites to CERT-In?`;
+        
+        if (!confirm(message)) {
+            return;
+        }
+        
+        let successCount = 0;
+        let failureCount = 0;
+        
+        for (const type of typeArray) {
+            try {
+                const response = await fetch('/api/scan/send-abuse-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scan_id: parseInt(scanId),
+                        impersonation_type: type
+                    })
+                });
+                
+                if (response.ok) {
+                    successCount++;
+                    console.log(`✅ Abuse report sent for ${type}`);
+                } else {
+                    const errData = await response.json();
+                    failureCount++;
+                    console.error(`Failed for ${type}:`, errData.detail || 'Unknown error');
+                }
+            } catch (error) {
+                failureCount++;
+                console.error(`Error for ${type}:`, error.message);
+            }
+        }
+        
+        alert(`📧 REPORTS SENT\\n\\n✅ Successful: ${successCount}\\n❌ Failed: ${failureCount}`);
+        
+    } catch (error) {
+        alert('Error: ' + (error.message || 'Unknown error occurred'));
+    }
+}
+
+/* ---------- Send Vulnerability Report (Module 1) ---------- */
+async function sendVulnerabilityReport() {
+    try {
+        const scanId = document.getElementById('scanId').textContent;
+        if (!scanId || scanId === '—') {
+            showModal('No Active Scan', 'No active scan found. Please complete a scan first.');
+            return;
+        }
+        
+        // Get data types from ONLY SELECTED rows
+        const tbody = document.getElementById('resultsTableBody');
+        const dataTypes = new Set();
+        
+        tbody.querySelectorAll('tr').forEach(row => {
+            const checkbox = row.cells[0].querySelector('.result-checkbox');
+            // Only include checked rows
+            if (checkbox && checkbox.checked) {
+                const dataTypeCell = row.cells[1];
+                if (dataTypeCell) {
+                    const dataType = dataTypeCell.textContent.trim().toLowerCase().replace(/'/g, '');
+                    if (dataType && dataType !== 'no sensitive data leaks detected') {
+                        dataTypes.add(dataType.split(',')[0].trim());
+                    }
+                }
+            }
+        });
+        
+        if (dataTypes.size === 0) {
+            showModal('No Data Selected', 'Please select at least one row with data types to report.');
+            return;
+        }
+        
+        const dataTypeArray = Array.from(dataTypes);
+        let message = `Detected data types in selected rows:\n\n`;
+        dataTypeArray.forEach(dt => message += `  • ${dt.toUpperCase()}\n`);
+        message += `\nThis will send information disclosure vulnerability reports for these data types to CERT-In.`;
+        
+        const modal = showConfirmModal('Send Vulnerability Report', message, async () => {
+        
+            let successCount = 0;
+            let failureCount = 0;
+            
+            for (const dataType of dataTypeArray) {
+                try {
+                    const response = await fetch('/api/scan/send-vulnerability-report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            scan_id: parseInt(scanId),
+                            data_type: dataType.trim()
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        successCount++;
+                        console.log(`✅ Vulnerability report sent for ${dataType}`);
+                    } else {
+                        const errData = await response.json();
+                        failureCount++;
+                        console.error(`Failed to send report for ${dataType}:`, errData.detail || 'Unknown error');
+                    }
+                } catch (error) {
+                    failureCount++;
+                    console.error(`Error sending report for ${dataType}:`, error.message);
+                }
+            }
+            
+            showModal('Reports Sent', `✅ Successful: ${successCount}\n❌ Failed: ${failureCount}\n\nAll information disclosure vulnerability reports have been submitted to CERT-In for immediate action.`);
+        });
+    } catch (error) {
+        showModal('Error', 'Error: ' + (error.message || 'Unknown error occurred'));
+    }
 }
 
 /* ===================== MODULE 2: GIDS ===================== */
@@ -330,6 +748,15 @@ function displayGIDSResults(data) {
     document.getElementById('gids-progressPanel').style.display = 'none';
     document.getElementById('gids-resultsPanel').style.display = 'block';
 
+    // Cache the scan results for recent scans access
+    scanResultsCache[data.scan_id] = {
+        type: 'module2',
+        data: data
+    };
+
+    // ✅ SET THE SCAN ID SO MAIN BUTTONS CAN FIND IT
+    document.getElementById('gids-scanId').textContent = data.scan_id;
+
     const findings = data.findings || [];
     const rb = data.risk_breakdown || { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
 
@@ -348,6 +775,7 @@ function displayGIDSResults(data) {
 
     window.allGIDSResults = findings;
     displayGIDSResultsTable(findings);
+    loadRecentScans();
 }
 
 function displayGIDSResultsTable(results) {
@@ -391,6 +819,76 @@ function exportGIDSResults() {
     a.href = URL.createObjectURL(blob);
     a.download = `gids_results_${Date.now()}.csv`;
     a.click();
+}
+
+/* ---------- Send Abuse Report (Module 2) ---------- */
+async function sendAbuseReport() {
+    try {
+        const scanId = document.getElementById('gids-scanId').textContent;
+        if (!scanId || scanId === '—') {
+            alert('❌ No active scan found. Please complete a scan first.');
+            return;
+        }
+        
+        // Get all detected impersonation types from the results
+        const results = window.allGIDSResults || [];
+        const impersonationTypes = new Set();
+        
+        results.forEach(r => {
+            if (r.impersonation_type) {
+                impersonationTypes.add(r.impersonation_type);
+            }
+        });
+        
+        if (impersonationTypes.size === 0) {
+            alert('❌ No impersonation threats detected in results. Check scan completed successfully.');
+            return;
+        }
+        
+        const typeArray = Array.from(impersonationTypes);
+        let message = '⚠️ ABUSE REPORT - GOVERNMENT IMPERSONATION\n\nDetected Threat Types:\n';
+        typeArray.forEach(type => message += `  • ${type.replace(/_/g, ' ').toUpperCase()}\n`);
+        message += `\nSend abuse reports for detected government impersonation sites to CERT-In?`;
+        
+        if (!confirm(message)) {
+            return;
+        }
+        
+        let successCount = 0;
+        let failureCount = 0;
+        
+        for (const type of typeArray) {
+            try {
+                const response = await fetch('/api/scan/send-abuse-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scan_id: parseInt(scanId),
+                        impersonation_type: type
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    successCount++;
+                    console.log(`✅ Abuse report sent for ${type}`);
+                } else {
+                    const errData = await response.json();
+                    failureCount++;
+                    console.error(`Failed to send abuse report for ${type}:`, errData.detail || 'Unknown error');
+                }
+            } catch (error) {
+                failureCount++;
+                console.error(`Error sending abuse report for ${type}:`, error.message);
+            }
+        }
+        
+        const message2 = `📧 ABUSE REPORTS SENT\n\n✅ Successful: ${successCount}\n❌ Failed: ${failureCount}\n\nAll government impersonation abuse reports have been submitted to CERT-In for immediate investigation and takedown action.`;
+        alert(message2);
+        
+    } catch (error) {
+        alert('Error: ' + (error.message || 'Unknown error occurred'));
+    }
 }
 
 function resetGIDSScan() {

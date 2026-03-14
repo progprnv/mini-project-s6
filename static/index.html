@@ -81,7 +81,6 @@
                             <div class="chip-grid">
                                 <label class="chip"><input type="checkbox" name="dataType" value="aadhaar" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="6" y1="14" x2="6.01" y2="14"/><line x1="10" y1="10" x2="18" y2="10"/><line x1="10" y1="14" x2="18" y2="14"/></svg></span><span class="chip-text">Aadhaar</span></span></label>
                                 <label class="chip"><input type="checkbox" name="dataType" value="pan" checked><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span><span class="chip-text">PAN Card</span></span></label>
-                                <label class="chip"><input type="checkbox" name="dataType" value="bank_account"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span><span class="chip-text">Bank Account</span></span></label>
                                 <label class="chip"><input type="checkbox" name="dataType" value="voter_id"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="chip-text">Voter ID</span></span></label>
                                 <label class="chip"><input type="checkbox" name="dataType" value="passport"><span class="chip-body"><span class="chip-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span><span class="chip-text">Passport</span></span></label>
                             </div>
@@ -92,7 +91,6 @@
                                 <label class="chip chip-sm"><input type="checkbox" name="fileType" value="pdf" checked><span class="chip-body"><span class="chip-text">PDF</span></span></label>
                                 <label class="chip chip-sm"><input type="checkbox" name="fileType" value="doc" checked><span class="chip-body"><span class="chip-text">DOC</span></span></label>
                                 <label class="chip chip-sm"><input type="checkbox" name="fileType" value="docx" checked><span class="chip-body"><span class="chip-text">DOCX</span></span></label>
-                                <label class="chip chip-sm"><input type="checkbox" name="fileType" value="html"><span class="chip-body"><span class="chip-text">HTML</span></span></label>
                             </div>
                         </div>
                         <div class="form-row">
@@ -104,15 +102,6 @@
                                 <label class="form-label" for="maxResults">Max Results</label>
                                 <input type="number" id="maxResults" class="form-input" value="10" min="1" max="50">
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="toggle-label">
-                                <div class="toggle-switch">
-                                    <input type="checkbox" id="sendEmail" checked>
-                                    <span class="toggle-slider"></span>
-                                </div>
-                                <span>Auto-report to CERT-In (<code>vdisclose@cert-in.org.in</code>)</span>
-                            </label>
                         </div>
                         <button class="btn btn-primary btn-lg" onclick="startScan()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -160,11 +149,19 @@
                         <div class="results-summary" id="resultsSummary"></div>
                         <div class="table-wrap">
                             <table class="data-table" id="resultsTable">
-                                <thead><tr><th>Data Type</th><th>File URL</th><th>Confidence</th><th>Evidence</th><th>Action</th></tr></thead>
+                                <thead><tr><th><input type="checkbox" id="selectAllResults" onchange="toggleSelectAll(this)"></th><th>Data Type</th><th>File URL</th><th>Confidence</th><th>Evidence</th><th>Action</th></tr></thead>
                                 <tbody id="resultsTableBody"></tbody>
                             </table>
                         </div>
                         <div class="btn-group">
+                            <button class="btn btn-success" onclick="sendSelectedReport()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                Send Selected URLs
+                            </button>
+                            <button class="btn btn-warning" onclick="sendVulnerabilityReport()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                Send Vulnerability Alert
+                            </button>
                             <button class="btn btn-ghost" onclick="exportResults()">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 Export CSV
@@ -256,6 +253,10 @@
                             </table>
                         </div>
                         <div class="btn-group">
+                            <button class="btn btn-danger" onclick="sendAbuseReport()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                Send Abuse Report
+                            </button>
                             <button class="btn btn-ghost" onclick="exportGIDSResults()">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 Export CSV

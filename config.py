@@ -34,13 +34,12 @@ class Settings:
         self.patterns: Dict[str, str] = {
             "aadhaar": r"\b\d{4}\s?\d{4}\s?\d{4}\b",
             "pan": r"\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b",
-            "bank_account": r"\b\d{9,18}\b",
             "voter_id": r"\b[A-Z]{3}[0-9]{7}\b",
             "passport": r"\b[A-Z]{1}[0-9]{7}\b"
         }
         
         # File Type Extensions
-        self.supported_file_types: List[str] = ["pdf", "doc", "docx", "html", "log", "txt"]
+        self.supported_file_types: List[str] = ["pdf", "doc", "docx", "log", "txt"]
         
         # Search Configuration
         self.max_results_per_query: int = 10
