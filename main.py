@@ -1240,15 +1240,13 @@ async def health_diagnostic(db: Session = Depends(get_db)):
         
         # List recent scans
         try:
-            recent_scans = db.query(Scan).order_by(Scan.created_at.desc()).limit(5).all()
+            recent_scans = db.query(Scan).order_by(Scan.scan_id.desc()).limit(5).all()
             diagnostics["recent_scans"] = [
                 {
                     "scan_id": s.scan_id,
                     "module_type": s.module_type,
                     "status": s.status,
-                    "results_count": s.results_count,
-                    "created_at": s.created_at.isoformat() if s.created_at else None,
-                    "end_time": s.end_time.isoformat() if s.end_time else None
+                    "results_count": s.results_count
                 }
                 for s in recent_scans
             ]
@@ -1259,6 +1257,51 @@ async def health_diagnostic(db: Session = Depends(get_db)):
         
     except Exception as e:
         logger.error(f"Diagnostic check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/test/sensitive-data-scan")
+async def test_sensitive_data_scan(
+    data_types: List[str] = Query(["aadhaar"]),
+    file_types: List[str] = Query(["pdf"]),
+    domain: str = Query(""),
+    max_results: int = Query(3),
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    """Test endpoint to manually trigger a sensitive data scan with detailed logging"""
+    try:
+        logger.info(f"🧪 Test scan initiated: data_types={data_types}, file_types={file_types}, domain={domain}")
+        
+        # Create scan record
+        scan = Scan(
+            module_type="sensitive_data",
+            status="in_progress",
+            results_count=0
+        )
+        db.add(scan)
+        db.commit()
+        db.refresh(scan)
+        
+        # Queue background task
+        background_tasks.add_task(
+            execute_sensitive_data_scan,
+            scan.scan_id,
+            data_types,
+            file_types,
+            domain or "gov.in",
+            max_results
+        )
+        
+        return {
+            "scan_id": scan.scan_id,
+            "status": "in_progress",
+            "message": f"Test scan {scan.scan_id} started. Watch server logs for detailed output.",
+            "instructions": "Check the terminal for detailed logging with 🔍, 📋, ℹ️, ✅, ⚠️, and ❌ symbols"
+        }
+        
+    except Exception as e:
+        logger.error(f"Test scan initialization failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
