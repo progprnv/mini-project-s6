@@ -233,9 +233,6 @@ function pollScanStatus(scanId) {
             const response = await fetch(`/api/scan/${scanId}/status`);
             const data = await response.json();
             document.getElementById('scanStatus').textContent = data.status;
-            
-            // Update detection count live continuously
-            document.getElementById('detectionsCount').textContent = data.results_count;
 
             if (data.status === 'in_progress') {
                 progress = Math.min(progress + 10, 90);
@@ -245,6 +242,7 @@ function pollScanStatus(scanId) {
                 clearInterval(pollInterval);
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('progressText').textContent = 'Scan completed!';
+                document.getElementById('detectionsCount').textContent = data.results_count;
                 stopECG('ecgCanvas');
                 document.getElementById('stopScanBtn').disabled = true;
                 setTimeout(() => displayResults(data), 800);
@@ -256,6 +254,7 @@ function pollScanStatus(scanId) {
                 clearInterval(pollInterval);
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('progressText').textContent = 'Scan finished (no results found)';
+                document.getElementById('detectionsCount').textContent = data.results_count;
                 stopECG('ecgCanvas');
                 document.getElementById('stopScanBtn').disabled = true;
                 setTimeout(() => displayResults(data), 800);

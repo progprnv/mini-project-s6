@@ -623,7 +623,6 @@ def execute_sensitive_data_scan(
     
     try:
         logger.info(f"🔍 Starting scan {scan_id}...")
-        logger.info(f"📋 Parameters: data_types={data_types}, file_types={file_types}, domain={domain}, max_results={max_results}")
         clear_scan_cancelled(scan_id)
         selected_data_types = normalize_sensitive_types(data_types)
         selected_file_types = [
@@ -632,7 +631,6 @@ def execute_sensitive_data_scan(
         if not selected_file_types:
             selected_file_types = ["pdf"]
 
-        logger.info(f"✅ Normalized: data_types={selected_data_types}, file_types={selected_file_types}")
         effective_max_results = max(1, int(max_results or 1))
         parallel_workers = max(1, min(settings.max_parallel_url_workers, effective_max_results))
 
@@ -655,9 +653,7 @@ def execute_sensitive_data_scan(
         
         # Generate dorking queries
         queries = google_search.generate_dork_queries(selected_data_types, domain)
-        logger.info(f"📋 Generated {len(queries)} search queries:")
-        for q in queries:
-            logger.info(f"   - {q['query']}")
+        logger.info(f"📋 Generated {len(queries)} search queries")
 
         if not queries:
             scan = db.query(Scan).filter(Scan.scan_id == scan_id).first()
@@ -690,7 +686,6 @@ def execute_sensitive_data_scan(
                     settings.max_search_pages_per_query,
                     max(1, math.ceil(effective_max_results / 10))
                 )
-                logger.info(f"🔎 Executing query: {query}")
                 results = google_search.search(
                     query,
                     num_results=10,
@@ -725,8 +720,6 @@ def execute_sensitive_data_scan(
                 logger.error(f"❌ Query execution failed: {str(e)}")
                 continue
 
-        logger.info(f"📝 Found {len(candidate_urls)} candidate URLs to process")
-
         def process_single_url(url: str, query_data_type: str):
             max_url_retries = 2
 
@@ -735,26 +728,17 @@ def execute_sensitive_data_scan(
                     return None
 
                 try:
-                    logger.info(f"⬇️ Processing URL: {url}")
                     file_content, file_ext = doc_processor.download_file(url)
-                    logger.info(f"✅ Downloaded {len(file_content)} bytes, ext={file_ext}")
-                    
                     if file_ext and file_ext.lower() not in selected_file_types:
-                        logger.warning(f"⚠️ Skipping {url}: file type {file_ext} not in {selected_file_types}")
                         return None
 
                     text = doc_processor.extract_text(file_content, file_ext)
                     if not text:
-                        logger.warning(f"⚠️ No text extracted from {url}")
                         return None
 
-                    logger.info(f"📄 Extracted {len(text)} characters from {url}")
                     detections = data_detector.detect_all(text, selected_types=[query_data_type])
                     matches = detections.get(query_data_type, [])
-                    logger.info(f"🔍 Found {len(matches)} matches in {url}")
-                    
                     if not matches:
-                        logger.info(f"ℹ️  No {query_data_type} patterns detected in {url}")
                         return None
 
                     return {
@@ -843,8 +827,6 @@ def execute_sensitive_data_scan(
         
     except Exception as e:
         logger.error(f"❌ Scan {scan_id} failed: {str(e)}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
         
         # Update scan status to failed
         scan = db.query(Scan).filter(Scan.scan_id == scan_id).first()
@@ -1161,148 +1143,6 @@ async def execute_government_impersonation_scan(
     
     finally:
         db.close()
-
-
-@app.get("/api/health/diagnostic")
-async def health_diagnostic(db: Session = Depends(get_db)):
-    """Diagnostic endpoint to check system configuration and health"""
-    try:
-        diagnostics = {
-            "status": "ok",
-            "timestamp": datetime.utcnow().isoformat(),
-            "checks": {}
-        }
-        
-        # Check SerpAPI configuration
-        if settings.serpapi_key:
-            diagnostics["checks"]["serpapi"] = {
-                "configured": True,
-                "key_length": len(settings.serpapi_key),
-                "key_preview": settings.serpapi_key[:10] + "..." if len(settings.serpapi_key) > 10 else "***"
-            }
-        else:
-            diagnostics["checks"]["serpapi"] = {
-                "configured": False,
-                "message": "SerpAPI key not set - Module 1 (Sensitive Data) will not work"
-            }
-            diagnostics["status"] = "warning"
-        
-        # Check database connectivity
-        try:
-            test_scan = db.query(Scan).limit(1).first()
-            diagnostics["checks"]["database"] = {
-                "connected": True,
-                "message": "SQLite database is accessible"
-            }
-        except Exception as e:
-            diagnostics["checks"]["database"] = {
-                "connected": False,
-                "error": str(e)
-            }
-            diagnostics["status"] = "error"
-        
-        # Check Google Search module
-        try:
-            test_queries = google_search.generate_dork_queries(["aadhaar"], "gov.in")
-            diagnostics["checks"]["google_search"] = {
-                "functional": True,
-                "test_queries_generated": len(test_queries),
-                "sample_query": test_queries[0]["query"] if test_queries else None
-            }
-        except Exception as e:
-            diagnostics["checks"]["google_search"] = {
-                "functional": False,
-                "error": str(e)
-            }
-            diagnostics["status"] = "error"
-        
-        # Check Sensitive Data Detector
-        try:
-            test_text = "My Aadhaar number is 123456789012 and my PAN is AAAAA1234A"
-            test_detections = data_detector.detect_all(test_text)
-            diagnostics["checks"]["detector"] = {
-                "functional": True,
-                "test_patterns_detected": len(test_detections),
-                "detected_types": list(test_detections.keys())
-            }
-        except Exception as e:
-            diagnostics["checks"]["detector"] = {
-                "functional": False,
-                "error": str(e)
-            }
-            diagnostics["status"] = "error"
-        
-        # Check Document Processor
-        diagnostics["checks"]["document_processor"] = {
-            "functional": True,
-            "supported_formats": ["pdf", "docx", "html", "txt"]
-        }
-        
-        # List recent scans
-        try:
-            recent_scans = db.query(Scan).order_by(Scan.scan_id.desc()).limit(5).all()
-            diagnostics["recent_scans"] = [
-                {
-                    "scan_id": s.scan_id,
-                    "module_type": s.module_type,
-                    "status": s.status,
-                    "results_count": s.results_count
-                }
-                for s in recent_scans
-            ]
-        except Exception as e:
-            diagnostics["recent_scans"] = {"error": str(e)}
-        
-        return diagnostics
-        
-    except Exception as e:
-        logger.error(f"Diagnostic check failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/test/sensitive-data-scan")
-async def test_sensitive_data_scan(
-    data_types: List[str] = Query(["aadhaar"]),
-    file_types: List[str] = Query(["pdf"]),
-    domain: str = Query(""),
-    max_results: int = Query(3),
-    db: Session = Depends(get_db),
-    background_tasks: BackgroundTasks = BackgroundTasks()
-):
-    """Test endpoint to manually trigger a sensitive data scan with detailed logging"""
-    try:
-        logger.info(f"🧪 Test scan initiated: data_types={data_types}, file_types={file_types}, domain={domain}")
-        
-        # Create scan record
-        scan = Scan(
-            module_type="sensitive_data",
-            status="in_progress",
-            results_count=0
-        )
-        db.add(scan)
-        db.commit()
-        db.refresh(scan)
-        
-        # Queue background task
-        background_tasks.add_task(
-            execute_sensitive_data_scan,
-            scan.scan_id,
-            data_types,
-            file_types,
-            domain or "gov.in",
-            max_results
-        )
-        
-        return {
-            "scan_id": scan.scan_id,
-            "status": "in_progress",
-            "message": f"Test scan {scan.scan_id} started. Watch server logs for detailed output.",
-            "instructions": "Check the terminal for detailed logging with 🔍, 📋, ℹ️, ✅, ⚠️, and ❌ symbols"
-        }
-        
-    except Exception as e:
-        logger.error(f"Test scan initialization failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
